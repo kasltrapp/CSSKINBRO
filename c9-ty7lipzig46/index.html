@@ -470,7 +470,7 @@
 <div id="login-gate">
   <div class="login-box">
     <h1>ADMIN</h1>
-    <p>CSSKINBRO Control Panel</p>
+    <p>KASTLR Control Panel</p>
     <input class="login-input" type="password" id="admin-pw" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()"/>
     <button class="login-btn" onclick="login()">ACCESS</button>
     <div class="login-error" id="login-error">Incorrect password</div>
@@ -480,7 +480,7 @@
 <!-- SIDEBAR -->
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <h1>CSS<span>KINBRO</span></h1>
+    <h1>KAS<span>TLR</span></h1>
     <p>Admin Control Panel</p>
   </div>
   <nav class="sidebar-nav">
@@ -932,7 +932,7 @@
   const SUPABASE_URL  = 'https://ikzlzrkuxndxzzfhwurb.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlremx6cmt1eG5keHp6Zmh3dXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MDQyMDksImV4cCI6MjA5NjE4MDIwOX0.7XLB-H4WwNjvQq5QjBg8Ab2kma1DG20vMtWPOhb-1nk'; // Replace after rotating
   const ADMIN_PW_KEY  = 'csskinbro_admin_pw';
-  const DEFAULT_PW    = '850508_Kobus!'; // Change this immediately after first login
+  const DEFAULT_PW    = 'Admin1234!'; // Change this immediately after first login
   const SESSION_KEY   = 'csskinbro_admin_session';
 
   // Supabase client
@@ -1208,7 +1208,7 @@
       .order('change_pct', { ascending: false }).limit(1);
     if (!data?.[0]) { toast('No price data yet', true); return; }
     const s = data[0];
-    const text = `🟢 CS2 SKIN ALERT — ZA\n\n${s.skin_name}\n↑ +${s.change_pct?.toFixed(1)}% — now R${s.zar_price?.toLocaleString()}\n\nFull ZAR prices → csskinbro.com/prices`;
+    const text = `🟢 CS2 SKIN ALERT — ZA\n\n${s.skin_name}\n↑ +${s.change_pct?.toFixed(1)}% — now R${s.zar_price?.toLocaleString()}\n\nFull ZAR prices → kastlr.com/prices`;
     document.getElementById('manual-post').value = text;
     updateCharCount();
   }
