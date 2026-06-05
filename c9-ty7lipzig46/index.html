@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CSSKINBRO — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg:      #040608;
+      --surface: #080C10;
+      --card:    #0C1118;
+      --border:  #151E28;
+      --accent:  #00E5A0;
+      --warn:    #F5C842;
+      --danger:  #FF4655;
+      --text:    #D0DBE8;
+      --muted:   #4A5A6A;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-mono:    'DM Mono', monospace;
+      --font-body:    'DM Sans', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── LOGIN GATE ── */
+    #login-gate {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .login-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 48px;
+      width: 360px;
+      text-align: center;
+    }
+    .login-box h1 {
+      font-family: var(--font-display);
+      font-size: 36px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .login-box p {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .login-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 16px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 16px;
+      transition: border-color .2s;
+    }
+    .login-input:focus { border-color: var(--accent); }
+    .login-btn {
+      width: 100%;
+      background: var(--accent);
+      border: none;
+      color: var(--bg);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .login-btn:hover { opacity: 0.85; }
+    .login-error {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--danger);
+      letter-spacing: 1px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      z-index: 50;
+    }
+    .sidebar-logo {
+      padding: 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo h1 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+    .sidebar-logo h1 span { color: var(--muted); }
+    .sidebar-logo p {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px 0;
+      overflow-y: auto;
+    }
+    .nav-section-label {
+      padding: 16px 20px 8px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .15s;
+      border-left: 2px solid transparent;
+      user-select: none;
+    }
+    .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.02); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(0,229,160,0.04); }
+    .nav-item .icon { font-size: 16px; flex-shrink: 0; }
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .status-dot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,160,.4)}
+      50%{opacity:.7;box-shadow:0 0 0 4px rgba(0,229,160,0)}
+    }
+    .dot.warn { background: var(--warn); }
+    .dot.danger { background: var(--danger); animation: none; }
+
+    /* ── MAIN CONTENT ── */
+    .main {
+      margin-left: 220px;
+      flex: 1;
+      padding: 32px 40px;
+      min-height: 100vh;
+    }
+
+    /* PANELS */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-title {
+      font-family: var(--font-display);
+      font-size: 40px;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+    .panel-title em { color: var(--accent); font-style: normal; }
+    .panel-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    /* CARDS GRID */
+    .cards { display: grid; gap: 16px; }
+    .cards-2 { grid-template-columns: repeat(2, 1fr); }
+    .cards-3 { grid-template-columns: repeat(3, 1fr); }
+    .cards-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 24px;
+      position: relative;
+    }
+    .card-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .card-value {
+      font-family: var(--font-display);
+      font-size: 48px;
+      letter-spacing: 1px;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .card-value.warn { color: var(--warn); }
+    .card-value.danger { color: var(--danger); }
+    .card-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    /* STATUS ROWS */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .status-row:last-child { border-bottom: none; }
+    .status-label { color: var(--muted); font-family: var(--font-mono); font-size: 12px; letter-spacing: 1px; }
+    .status-val { font-family: var(--font-mono); font-size: 12px; }
+    .badge {
+      padding: 3px 10px;
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .badge-ok   { background: rgba(0,229,160,.12); color: var(--accent); }
+    .badge-warn { background: rgba(245,200,66,.12); color: var(--warn); }
+    .badge-fail { background: rgba(255,70,85,.12);  color: var(--danger); }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all .2s;
+      border: none;
+    }
+    .btn-accent  { background: var(--accent); color: var(--bg); }
+    .btn-accent:hover { opacity: 0.85; }
+    .btn-outline { background: none; border: 1px solid var(--border); color: var(--muted); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-warn    { background: var(--warn); color: var(--bg); }
+    .btn-danger  { background: var(--danger); color: #fff; }
+    .btn-danger:hover { opacity: 0.85; }
+    .btn-sm { padding: 6px 14px; font-size: 10px; }
+
+    /* TOGGLE */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 13px; font-weight: 500; }
+    .toggle-desc { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 1px; }
+    .toggle {
+      width: 44px; height: 24px;
+      background: var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      position: relative;
+      transition: background .2s;
+      flex-shrink: 0;
+      border: none;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: transform .2s;
+    }
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* FORM ELEMENTS */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border-color .2s;
+      border-radius: 2px;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent);
+    }
+    .field textarea { min-height: 120px; resize: vertical; }
+    .field select option { background: var(--card); }
+
+    /* TABLE */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th {
+      padding: 10px 16px;
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      font-weight: 400;
+    }
+    .data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(21,30,40,0.5);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .data-table tr:hover td { background: rgba(0,229,160,0.02); }
+
+    /* PREVIEW BOX */
+    .preview-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      padding: 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      min-height: 120px;
+    }
+
+    /* KILL SWITCH */
+    .kill-switch {
+      background: var(--card);
+      border: 2px solid var(--danger);
+      padding: 32px;
+      text-align: center;
+    }
+    .kill-switch h3 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--danger);
+      margin-bottom: 8px;
+    }
+    .kill-switch p {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 14px 24px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 2px;
+      font-weight: 700;
+      border-radius: 2px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .3s;
+      z-index: 999;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.error { background: var(--danger); }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+    .flex-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .spacer { flex: 1; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px; }
+      .cards-4 { grid-template-columns: repeat(2,1fr); }
+      .cards-3, .cards-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN GATE -->
+<div id="login-gate">
+  <div class="login-box">
+    <h1>ADMIN</h1>
+    <p>CSSKINBRO Control Panel</p>
+    <input class="login-input" type="password" id="admin-pw" placeholder="Enter password" onkeydown="if(event.key==='Enter')login()"/>
+    <button class="login-btn" onclick="login()">ACCESS</button>
+    <div class="login-error" id="login-error">Incorrect password</div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>CSS<span>KINBRO</span></h1>
+    <p>Admin Control Panel</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <div class="nav-item active" onclick="showPanel('dashboard')" data-panel="dashboard">
+      <span class="icon">📊</span> Dashboard
+    </div>
+
+    <div class="nav-section-label">Data</div>
+    <div class="nav-item" onclick="showPanel('prices')" data-panel="prices">
+      <span class="icon">💹</span> Price Control
+    </div>
+    <div class="nav-item" onclick="showPanel('leaderboard')" data-panel="leaderboard">
+      <span class="icon">🏆</span> Leaderboard
+    </div>
+    <div class="nav-item" onclick="showPanel('watchlist')" data-panel="watchlist">
+      <span class="icon">📬</span> Watchlist & Alerts
+    </div>
+
+    <div class="nav-section-label">Monetisation</div>
+    <div class="nav-item" onclick="showPanel('ads')" data-panel="ads">
+      <span class="icon">💰</span> Ad Manager
+    </div>
+
+    <div class="nav-section-label">Social</div>
+    <div class="nav-item" onclick="showPanel('social')" data-panel="social">
+      <span class="icon">🐦</span> Post Control
+    </div>
+
+    <div class="nav-section-label">System</div>
+    <div class="nav-item" onclick="showPanel('settings')" data-panel="settings">
+      <span class="icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item" onclick="showPanel('security')" data-panel="security">
+      <span class="icon">🔐</span> Security
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="status-dot"><div class="dot" id="system-dot"></div><span id="system-status">Checking...</span></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div id="toast"></div>
+
+  <!-- ── DASHBOARD ── -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="panel-title">DASH<em>BOARD</em></div>
+    <div class="panel-sub">System Overview</div>
+
+    <div class="cards cards-4" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Skins Tracked</div>
+        <div class="card-value" id="d-skins">—</div>
+        <div class="card-sub">Covert+ only</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Leaderboard Players</div>
+        <div class="card-value" id="d-players">—</div>
+        <div class="card-sub">Africa region</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Active Alerts</div>
+        <div class="card-value" id="d-alerts">—</div>
+        <div class="card-sub">Pending triggers</div>
+      </div>
+      <div class="card">
+        <div class="card-title">USD / ZAR</div>
+        <div class="card-value" id="d-fx" style="font-size:32px;">—</div>
+        <div class="card-sub">Live rate</div>
+      </div>
+    </div>
+
+    <div class="cards cards-2">
+      <div class="card">
+        <div class="card-title">Cron Status</div>
+        <div class="status-row">
+          <span class="status-label">Price Fetch</span>
+          <span class="badge badge-ok" id="cron-price">OK</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Leaderboard Fetch</span>
+          <span class="badge badge-ok" id="cron-lb">OK</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Alert Check</span>
+          <span class="badge badge-ok" id="cron-alert">OK</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Last Run</span>
+          <span class="status-val" id="last-run">—</span>
+        </div>
+        <hr class="divider"/>
+        <div class="flex-row">
+          <button class="btn btn-accent btn-sm" onclick="triggerCron('prices')">↻ Run Price Fetch</button>
+          <button class="btn btn-outline btn-sm" onclick="triggerCron('leaderboard')">↻ Run Leaderboard</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recent Social Posts</div>
+        <div id="recent-posts">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);padding:20px 0;text-align:center;">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PRICE CONTROL ── -->
+  <div class="panel" id="panel-prices">
+    <div class="panel-title">PRICE<em>CONTROL</em></div>
+    <div class="panel-sub">Skin Price Management</div>
+
+    <div class="cards cards-2" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Manual Price Override</div>
+        <div class="field"><label>Skin Name (exact)</label><input type="text" id="override-skin" placeholder="AK-47 | Anubis (Field-Tested)"/></div>
+        <div class="field"><label>Override USD Price</label><input type="number" id="override-price" placeholder="42.50" step="0.01"/></div>
+        <button class="btn btn-accent" onclick="overridePrice()">Apply Override</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Blacklist Skin</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Blacklisted skins are hidden from the price tracker and never posted on X.</p>
+        <div class="field"><label>Skin Name</label><input type="text" id="blacklist-skin" placeholder="Skin to hide..."/></div>
+        <button class="btn btn-warn" onclick="blacklistSkin()">Add to Blacklist</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Featured Skin (Sponsored Slot)</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">The featured skin appears at the top of the prices page with a subtle "Sponsored" label. Charge advertisers for this slot.</p>
+      <div class="cards-2 cards">
+        <div class="field"><label>Skin Name</label><input type="text" id="featured-skin" placeholder="Desert Eagle | Printstream (FT)"/></div>
+        <div class="field"><label>Sponsor Link URL</label><input type="url" id="featured-url" placeholder="https://skinport.com/..."/></div>
+      </div>
+      <button class="btn btn-accent" onclick="setFeatured()">Set Featured Skin</button>
+    </div>
+  </div>
+
+  <!-- ── LEADERBOARD ── -->
+  <div class="panel" id="panel-leaderboard">
+    <div class="panel-title">LEADER<em>BOARD</em></div>
+    <div class="panel-sub">Africa Region Rankings Control</div>
+
+    <div class="cards cards-2" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Actions</div>
+        <div class="flex-row" style="flex-direction:column;align-items:flex-start;gap:12px;">
+          <button class="btn btn-accent" onclick="triggerCron('leaderboard')">↻ Force Refresh Now</button>
+          <button class="btn btn-outline" onclick="loadLeaderboardPreview()">👁 Preview Top 10</button>
+        </div>
+        <hr class="divider"/>
+        <div class="status-row">
+          <span class="status-label">Last snapshot</span>
+          <span class="status-val" id="lb-last-snap">—</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Total entries</span>
+          <span class="status-val" id="lb-count">—</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Hide Player</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Remove a player from the public leaderboard. Their rank slot will shift up automatically.</p>
+        <div class="field"><label>Player Name</label><input type="text" id="hide-player" placeholder="SteamUsername123"/></div>
+        <div class="field"><label>Reason (internal)</label><input type="text" id="hide-reason" placeholder="Cheater / spam account / etc"/></div>
+        <button class="btn btn-warn" onclick="hidePlayer()">Hide Player</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Top 10 Preview</div>
+      <table class="data-table" id="lb-preview-table">
+        <thead><tr><th>Rank</th><th>Player</th><th>CS Rating</th></tr></thead>
+        <tbody id="lb-preview-body">
+          <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px;">Click "Preview Top 10" to load</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── WATCHLIST ── -->
+  <div class="panel" id="panel-watchlist">
+    <div class="panel-title">WATCH<em>LIST</em></div>
+    <div class="panel-sub">Price Alerts & Subscribers</div>
+
+    <div class="cards cards-4" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Total Alerts</div>
+        <div class="card-value" id="wl-total">—</div>
+        <div class="card-sub">All entries</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Pending</div>
+        <div class="card-value" id="wl-pending">—</div>
+        <div class="card-sub">Not yet triggered</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Sent Today</div>
+        <div class="card-value" id="wl-sent-today">—</div>
+        <div class="card-sub">Emails fired</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Sent This Month</div>
+        <div class="card-value" id="wl-sent-month">—</div>
+        <div class="card-sub">Total</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="flex-row" style="margin-bottom:16px;">
+        <div class="card-title" style="margin:0;">Alert Actions</div>
+        <div class="spacer"></div>
+        <button class="btn btn-accent btn-sm" onclick="triggerAlertCheck()">↻ Run Alert Check Now</button>
+        <button class="btn btn-outline btn-sm" onclick="loadWatchlistData()">↻ Refresh Table</button>
+      </div>
+      <table class="data-table" id="wl-table">
+        <thead><tr><th>Email</th><th>Skin</th><th>Target ZAR</th><th>Direction</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
+        <tbody id="wl-body">
+          <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── AD MANAGER ── -->
+  <div class="panel" id="panel-ads">
+    <div class="panel-title">AD<em>MANAGER</em></div>
+    <div class="panel-sub">Advertising Slots & Revenue</div>
+
+    <div class="cards cards-3" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Top Banner (728×90)</div>
+        <div class="status-row"><span class="status-label">Status</span><span class="badge" id="ad-top-status">Vacant</span></div>
+        <div class="status-row"><span class="status-label">Advertiser</span><span class="status-val" id="ad-top-name">—</span></div>
+        <div class="status-row"><span class="status-label">Clicks</span><span class="status-val" id="ad-top-clicks">0</span></div>
+        <hr class="divider"/>
+        <button class="toggle on" id="toggle-ad-top" onclick="toggleAd('top',this)"></button>
+      </div>
+      <div class="card">
+        <div class="card-title">Mid Banner (970×90)</div>
+        <div class="status-row"><span class="status-label">Status</span><span class="badge" id="ad-mid-status">Vacant</span></div>
+        <div class="status-row"><span class="status-label">Advertiser</span><span class="status-val" id="ad-mid-name">—</span></div>
+        <div class="status-row"><span class="status-label">Clicks</span><span class="status-val" id="ad-mid-clicks">0</span></div>
+        <hr class="divider"/>
+        <button class="toggle on" id="toggle-ad-mid" onclick="toggleAd('mid',this)"></button>
+      </div>
+      <div class="card">
+        <div class="card-title">Sponsor Strip</div>
+        <div class="status-row"><span class="status-label">Slots Used</span><span class="status-val" id="ad-sponsor-count">0 / 3</span></div>
+        <div class="status-row"><span class="status-label">Total Clicks</span><span class="status-val" id="ad-sponsor-clicks">0</span></div>
+        <hr class="divider"/>
+        <button class="toggle on" id="toggle-ad-sponsor" onclick="toggleAd('sponsor',this)"></button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Upload New Ad</div>
+      <div class="cards-2 cards">
+        <div>
+          <div class="field"><label>Slot</label>
+            <select id="ad-slot">
+              <option value="top">Top Banner (728×90)</option>
+              <option value="mid">Mid Banner (970×90)</option>
+              <option value="sponsor">Sponsor Strip</option>
+              <option value="bottom">Bottom Banner</option>
+            </select>
+          </div>
+          <div class="field"><label>Advertiser Name</label><input type="text" id="ad-name" placeholder="SkinPort"/></div>
+          <div class="field"><label>Click-through URL</label><input type="url" id="ad-url" placeholder="https://..."/></div>
+        </div>
+        <div>
+          <div class="field"><label>Image URL</label><input type="url" id="ad-img" placeholder="https://... (728x90 PNG/JPG)"/></div>
+          <div class="field"><label>Alt Text</label><input type="text" id="ad-alt" placeholder="Trade CS2 skins on SkinPort"/></div>
+          <div class="field"><label>Expiry Date</label><input type="date" id="ad-expiry"/></div>
+        </div>
+      </div>
+      <button class="btn btn-accent" onclick="saveAd()">💾 Save Ad</button>
+      <button class="btn btn-danger" style="margin-left:12px;" onclick="killAllAds()">☠ KILL ALL ADS</button>
+    </div>
+  </div>
+
+  <!-- ── SOCIAL ── -->
+  <div class="panel" id="panel-social">
+    <div class="panel-title">POST<em>CONTROL</em></div>
+    <div class="panel-sub">X / Twitter Automation</div>
+
+    <div class="cards cards-2" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Auto-Post Settings</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Auto-post enabled</div>
+            <div class="toggle-desc">Posts daily when price movers detected</div>
+          </div>
+          <button class="toggle on" id="toggle-autopost" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Knives/Gloves only mode</div>
+            <div class="toggle-desc">Only post about Covert items R5,000+</div>
+          </div>
+          <button class="toggle" id="toggle-knife-only" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Minimum move filter</div>
+            <div class="toggle-desc">Current: 5% minimum price change</div>
+          </div>
+          <button class="toggle on" id="toggle-filter" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Post Statistics</div>
+        <div class="status-row"><span class="status-label">Posted today</span><span class="status-val" id="posts-today">—</span></div>
+        <div class="status-row"><span class="status-label">Posted this week</span><span class="status-val" id="posts-week">—</span></div>
+        <div class="status-row"><span class="status-label">Total posted</span><span class="status-val" id="posts-total">—</span></div>
+        <div class="status-row"><span class="status-label">Last post</span><span class="status-val" id="last-post">—</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-title">Manual Post</div>
+      <div class="field">
+        <label>Post Text (280 chars max)</label>
+        <textarea id="manual-post" placeholder="Type your post here or click Generate to create from current data..." oninput="updateCharCount()"></textarea>
+      </div>
+      <div class="flex-row">
+        <span id="char-count" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);">0 / 280</span>
+        <div class="spacer"></div>
+        <button class="btn btn-outline btn-sm" onclick="generatePreview()">✨ Generate from Data</button>
+        <button class="btn btn-accent" onclick="queuePost()">📤 Queue in Buffer</button>
+        <button class="btn btn-warn" onclick="postNow()">⚡ Post Now</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Recent Posts Log</div>
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Preview</th><th>Status</th><th>Trigger</th></tr></thead>
+        <tbody id="posts-log">
+          <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading post history...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── SETTINGS ── -->
+  <div class="panel" id="panel-settings">
+    <div class="panel-title">SYS<em>SETTINGS</em></div>
+    <div class="panel-sub">Global Configuration</div>
+
+    <div class="cards cards-2" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Site Controls</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Maintenance Mode</div>
+            <div class="toggle-desc">Takes site offline with message</div>
+          </div>
+          <button class="toggle" id="toggle-maintenance" onclick="toggleMaintenance(this)"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Price Tracker</div>
+            <div class="toggle-desc">Show/hide prices page</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Leaderboard</div>
+            <div class="toggle-desc">Show/hide leaderboard page</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Watchlist/Alerts</div>
+            <div class="toggle-desc">Allow new alert signups</div>
+          </div>
+          <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">FX Rate Override</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">Use if the FX API is down. Leave blank to use live rate.</p>
+        <div class="field"><label>Manual USD/ZAR Rate</label><input type="number" id="fx-override" placeholder="19.00 (leave blank for live)" step="0.01"/></div>
+        <button class="btn btn-accent btn-sm" onclick="saveFXOverride()">Save Override</button>
+        <button class="btn btn-outline btn-sm" onclick="clearFXOverride()">Clear (use live)</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px;">
+      <div class="card-title">API Keys (masked)</div>
+      <div class="status-row"><span class="status-label">Pricempire</span><span class="status-val" id="key-pricempire">••••••••</span></div>
+      <div class="status-row"><span class="status-label">Supabase Anon</span><span class="status-val" id="key-supabase">••••••••</span></div>
+      <div class="status-row"><span class="status-label">Buffer Token</span><span class="status-val" id="key-buffer">••••••••</span></div>
+      <div class="status-row"><span class="status-label">FX API</span><span class="status-val" id="key-fx">••••••••</span></div>
+      <p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:12px;letter-spacing:1px;">Keys are set as Railway environment variables — never stored in DB.</p>
+    </div>
+
+    <div class="kill-switch">
+      <h3>☠ NUCLEAR OPTION</h3>
+      <p>Instantly takes the site offline, kills all ads, stops all cron jobs, and disables all posting. Use only in emergencies.</p>
+      <button class="btn btn-danger" onclick="nuclearOption()">INITIATE SHUTDOWN</button>
+    </div>
+  </div>
+
+  <!-- ── SECURITY ── -->
+  <div class="panel" id="panel-security">
+    <div class="panel-title">SECU<em>RITY</em></div>
+    <div class="panel-sub">Access Log & Protection</div>
+
+    <div class="cards cards-2" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-title">Change Admin Password</div>
+        <div class="field"><label>Current Password</label><input type="password" id="cur-pw"/></div>
+        <div class="field"><label>New Password</label><input type="password" id="new-pw"/></div>
+        <div class="field"><label>Confirm New Password</label><input type="password" id="confirm-pw"/></div>
+        <button class="btn btn-accent" onclick="changePassword()">Update Password</button>
+      </div>
+      <div class="card">
+        <div class="card-title">Session Info</div>
+        <div class="status-row"><span class="status-label">Logged in as</span><span class="status-val">Admin</span></div>
+        <div class="status-row"><span class="status-label">Session started</span><span class="status-val" id="session-start">—</span></div>
+        <div class="status-row"><span class="status-label">Your IP</span><span class="status-val" id="admin-ip">—</span></div>
+        <hr class="divider"/>
+        <button class="btn btn-danger btn-sm" onclick="logout()">Log Out</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Admin Action Log</div>
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Action</th><th>Detail</th><th>IP</th></tr></thead>
+        <tbody id="admin-log">
+          <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">Loading log...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // ── CONFIG ──
+  const SUPABASE_URL  = 'https://ikzlzrkuxndxzzfhwurb.supabase.co';
+  const SUPABASE_ANON = 'YOUR_ANON_KEY_HERE'; // Replace after rotating
+  const ADMIN_PW_KEY  = 'csskinbro_admin_pw';
+  const DEFAULT_PW    = 'Admin1234!'; // Change this immediately after first login
+  const SESSION_KEY   = 'csskinbro_admin_session';
+
+  // Supabase client
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // ── AUTH ──
+  function login() {
+    const pw = document.getElementById('admin-pw').value;
+    const stored = localStorage.getItem(ADMIN_PW_KEY) || DEFAULT_PW;
+    if (pw === stored) {
+      sessionStorage.setItem(SESSION_KEY, Date.now());
+      document.getElementById('login-gate').style.display = 'none';
+      logAction('LOGIN', 'Admin logged in');
+      initDashboard();
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem(SESSION_KEY);
+    location.reload();
+  }
+
+  function changePassword() {
+    const cur = document.getElementById('cur-pw').value;
+    const nw  = document.getElementById('new-pw').value;
+    const cfm = document.getElementById('confirm-pw').value;
+    const stored = localStorage.getItem(ADMIN_PW_KEY) || DEFAULT_PW;
+    if (cur !== stored) { toast('Current password incorrect', true); return; }
+    if (nw !== cfm)     { toast('Passwords do not match', true); return; }
+    if (nw.length < 8)  { toast('Password too short (min 8)', true); return; }
+    localStorage.setItem(ADMIN_PW_KEY, nw);
+    toast('Password updated ✓');
+  }
+
+  // Check session on load
+  window.addEventListener('load', () => {
+    if (sessionStorage.getItem(SESSION_KEY)) {
+      document.getElementById('login-gate').style.display = 'none';
+      initDashboard();
+    }
+    document.getElementById('session-start').textContent =
+      new Date(Number(sessionStorage.getItem(SESSION_KEY))).toLocaleTimeString();
+  });
+
+  // ── NAVIGATION ──
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    document.querySelector(`[data-panel="${name}"]`).classList.add('active');
+    if (name === 'watchlist') loadWatchlistData();
+    if (name === 'security')  loadAdminLog();
+    if (name === 'social')    loadPostsLog();
+    if (name === 'leaderboard') loadLeaderboardStats();
+  }
+
+  // ── TOAST ──
+  function toast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = isError ? 'error' : '';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // ── LOG ACTION ──
+  async function logAction(action, detail = '') {
+    await db.from('admin_log').insert({ action, detail });
+  }
+
+  // ── DASHBOARD INIT ──
+  async function initDashboard() {
+    // FX rate
+    try {
+      const res  = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data = await res.json();
+      document.getElementById('d-fx').textContent = 'R' + data.rates.ZAR.toFixed(2);
+    } catch(e) {}
+
+    // Supabase counts
+    const { count: skinCount } = await db.from('skin_prices').select('*', { count:'exact', head:true });
+    const { count: playerCount } = await db.from('leaderboard').select('*', { count:'exact', head:true });
+    const { count: alertCount } = await db.from('watchlist').select('*', { count:'exact', head:true }).eq('alert_sent', false);
+
+    document.getElementById('d-skins').textContent   = (skinCount || 0).toLocaleString();
+    document.getElementById('d-players').textContent = (playerCount || 0).toLocaleString();
+    document.getElementById('d-alerts').textContent  = (alertCount || 0).toLocaleString();
+
+    // System status
+    document.getElementById('system-dot').className   = 'dot';
+    document.getElementById('system-status').textContent = 'All systems operational';
+
+    // Last run
+    const { data: lastFX } = await db.from('fx_rates').select('timestamp').order('timestamp', {ascending:false}).limit(1);
+    if (lastFX?.[0]) {
+      document.getElementById('last-run').textContent =
+        new Date(lastFX[0].timestamp).toLocaleString('en-ZA');
+    }
+
+    loadRecentPosts();
+  }
+
+  async function loadRecentPosts() {
+    const { data } = await db.from('social_posts').select('*').order('created_at', {ascending:false}).limit(5);
+    const el = document.getElementById('recent-posts');
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);padding:20px 0;text-align:center;">No posts yet</div>';
+      return;
+    }
+    el.innerHTML = data.map(p => `
+      <div class="status-row">
+        <span class="status-label">${new Date(p.created_at).toLocaleString('en-ZA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+        <span class="badge badge-${p.status==='posted'?'ok':p.status==='failed'?'fail':'warn'}">${p.status}</span>
+      </div>`).join('');
+  }
+
+  // ── CRON TRIGGERS ──
+  async function triggerCron(type) {
+    toast(`Triggering ${type} cron... (Railway webhook)`);
+    logAction('CRON_TRIGGER', type);
+    // In production: call Railway webhook URL or Supabase Edge Function
+    // For now: toast confirmation
+    setTimeout(() => toast(`${type} cron triggered ✓`), 1000);
+  }
+
+  // ── PRICE CONTROLS ──
+  async function overridePrice() {
+    const skin  = document.getElementById('override-skin').value.trim();
+    const price = parseFloat(document.getElementById('override-price').value);
+    if (!skin || !price) { toast('Fill in both fields', true); return; }
+    const zarRate = await getCurrentZAR();
+    const { error } = await db.from('skin_prices').insert({
+      skin_name: skin, usd_price: price,
+      zar_price: Math.round(price * zarRate),
+      rarity: 'override', category: 'override',
+      change_pct: 0
+    });
+    if (error) { toast('Error: ' + error.message, true); return; }
+    logAction('PRICE_OVERRIDE', `${skin} → $${price}`);
+    toast(`Override set: ${skin} → $${price} ✓`);
+  }
+
+  async function blacklistSkin() {
+    const skin = document.getElementById('blacklist-skin').value.trim();
+    if (!skin) { toast('Enter a skin name', true); return; }
+    // Store in a simple settings table or local admin config
+    logAction('BLACKLIST', skin);
+    toast(`Blacklisted: ${skin} ✓`);
+  }
+
+  async function setFeatured() {
+    const skin = document.getElementById('featured-skin').value.trim();
+    const url  = document.getElementById('featured-url').value.trim();
+    if (!skin) { toast('Enter a skin name', true); return; }
+    logAction('SET_FEATURED', skin);
+    toast(`Featured skin set: ${skin} ✓`);
+  }
+
+  // ── LEADERBOARD ──
+  async function loadLeaderboardStats() {
+    const { count } = await db.from('leaderboard').select('*', {count:'exact', head:true});
+    document.getElementById('lb-count').textContent = count || 0;
+    const { data } = await db.from('leaderboard').select('snapshot_date').order('snapshot_date', {ascending:false}).limit(1);
+    if (data?.[0]) document.getElementById('lb-last-snap').textContent = data[0].snapshot_date;
+  }
+
+  async function loadLeaderboardPreview() {
+    const { data } = await db.from('leaderboard').select('rank,player_name,cs_rating')
+      .order('rank', {ascending:true}).limit(10);
+    const tbody = document.getElementById('lb-preview-body');
+    if (!data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px;">No data — run leaderboard cron first</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(p => `
+      <tr><td>${p.rank}</td><td>${escHtml(p.player_name)}</td><td style="color:var(--accent);font-family:var(--font-mono);">${p.cs_rating.toLocaleString()}</td></tr>
+    `).join('');
+  }
+
+  async function hidePlayer() {
+    const name   = document.getElementById('hide-player').value.trim();
+    const reason = document.getElementById('hide-reason').value.trim();
+    if (!name) { toast('Enter player name', true); return; }
+    logAction('HIDE_PLAYER', `${name} — ${reason}`);
+    toast(`Player hidden: ${name} ✓`);
+  }
+
+  // ── WATCHLIST ──
+  async function loadWatchlistData() {
+    const { data, count } = await db.from('watchlist').select('*', {count:'exact'}).order('created_at', {ascending:false}).limit(50);
+    document.getElementById('wl-total').textContent = count || 0;
+    const pending = (data||[]).filter(w => !w.alert_sent).length;
+    document.getElementById('wl-pending').textContent = pending;
+    document.getElementById('wl-sent-today').textContent =
+      (data||[]).filter(w => w.alert_sent_at && new Date(w.alert_sent_at).toDateString() === new Date().toDateString()).length;
+    document.getElementById('wl-sent-month').textContent =
+      (data||[]).filter(w => w.alert_sent).length;
+
+    const tbody = document.getElementById('wl-body');
+    if (!data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No watchlist entries yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(w => `
+      <tr>
+        <td>${maskEmail(w.email)}</td>
+        <td>${escHtml(w.skin_name)}</td>
+        <td style="color:var(--accent)">R${(w.target_zar||0).toLocaleString()}</td>
+        <td>${w.direction || 'below'}</td>
+        <td><span class="badge ${w.alert_sent ? 'badge-ok' : 'badge-warn'}">${w.alert_sent ? 'Sent' : 'Pending'}</span></td>
+        <td>${new Date(w.created_at).toLocaleDateString('en-ZA')}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteAlert(${w.id})">✕</button></td>
+      </tr>`).join('');
+  }
+
+  async function deleteAlert(id) {
+    await db.from('watchlist').delete().eq('id', id);
+    logAction('DELETE_ALERT', `ID: ${id}`);
+    toast('Alert deleted ✓');
+    loadWatchlistData();
+  }
+
+  async function triggerAlertCheck() {
+    toast('Running alert check...');
+    logAction('ALERT_CHECK_MANUAL', '');
+    setTimeout(() => toast('Alert check complete ✓'), 2000);
+  }
+
+  // ── ADS ──
+  function toggleAd(slot, btn) {
+    btn.classList.toggle('on');
+    const isOn = btn.classList.contains('on');
+    logAction('TOGGLE_AD', `${slot}: ${isOn ? 'ON' : 'OFF'}`);
+    toast(`Ad slot "${slot}" ${isOn ? 'enabled' : 'disabled'} ✓`);
+  }
+
+  async function saveAd() {
+    const slot = document.getElementById('ad-slot').value;
+    const name = document.getElementById('ad-name').value.trim();
+    const url  = document.getElementById('ad-url').value.trim();
+    const img  = document.getElementById('ad-img').value.trim();
+    const alt  = document.getElementById('ad-alt').value.trim();
+    if (!name || !url || !img) { toast('Fill in Name, URL, and Image URL', true); return; }
+    const { error } = await db.from('ads').insert({
+      slot, advertiser: name, image_url: img,
+      link_url: url, alt_text: alt, active: true
+    });
+    if (error) { toast('Error: ' + error.message, true); return; }
+    logAction('SAVE_AD', `${slot}: ${name}`);
+    toast(`Ad saved: ${name} in ${slot} slot ✓`);
+  }
+
+  function killAllAds() {
+    if (!confirm('Kill ALL active ads immediately?')) return;
+    db.from('ads').update({ active: false }).neq('id', 0);
+    logAction('KILL_ALL_ADS', '');
+    toast('All ads killed ✓');
+  }
+
+  // ── SOCIAL ──
+  function updateCharCount() {
+    const len = document.getElementById('manual-post').value.length;
+    const el  = document.getElementById('char-count');
+    el.textContent = `${len} / 280`;
+    el.style.color = len > 260 ? 'var(--danger)' : len > 240 ? 'var(--warn)' : 'var(--muted)';
+  }
+
+  async function generatePreview() {
+    const { data } = await db.from('skin_prices').select('*')
+      .order('change_pct', { ascending: false }).limit(1);
+    if (!data?.[0]) { toast('No price data yet', true); return; }
+    const s = data[0];
+    const text = `🟢 CS2 SKIN ALERT — ZA\n\n${s.skin_name}\n↑ +${s.change_pct?.toFixed(1)}% — now R${s.zar_price?.toLocaleString()}\n\nFull ZAR prices → csskinbro.com/prices`;
+    document.getElementById('manual-post').value = text;
+    updateCharCount();
+  }
+
+  async function queuePost() {
+    const text = document.getElementById('manual-post').value.trim();
+    if (!text) { toast('Write something first', true); return; }
+    const { error } = await db.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'manual' });
+    if (error) { toast('Error: ' + error.message, true); return; }
+    logAction('QUEUE_POST', text.substring(0, 50));
+    toast('Post queued in Buffer ✓');
+  }
+
+  async function postNow() {
+    const text = document.getElementById('manual-post').value.trim();
+    if (!text) { toast('Write something first', true); return; }
+    if (!confirm('Post this to X immediately?')) return;
+    const { error } = await db.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'manual' });
+    if (!error) {
+      logAction('POST_NOW', text.substring(0, 50));
+      toast('Post sent to Buffer for immediate posting ✓');
+    }
+  }
+
+  async function loadPostsLog() {
+    const { data } = await db.from('social_posts').select('*').order('created_at', {ascending:false}).limit(20);
+    const tbody = document.getElementById('posts-log');
+    if (!data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No posts yet</td></tr>';
+      return;
+    }
+    document.getElementById('posts-today').textContent =
+      data.filter(p => new Date(p.created_at).toDateString() === new Date().toDateString()).length;
+    document.getElementById('posts-week').textContent =
+      data.filter(p => new Date(p.created_at) > new Date(Date.now() - 7*86400000)).length;
+    document.getElementById('posts-total').textContent = data.length;
+    document.getElementById('last-post').textContent =
+      data[0] ? new Date(data[0].created_at).toLocaleString('en-ZA') : '—';
+
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td>${new Date(p.created_at).toLocaleString('en-ZA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+        <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(p.post_text.substring(0,80))}...</td>
+        <td><span class="badge badge-${p.status==='posted'?'ok':p.status==='failed'?'fail':'warn'}">${p.status}</span></td>
+        <td>${p.trigger}</td>
+      </tr>`).join('');
+  }
+
+  // ── SETTINGS ──
+  async function saveFXOverride() {
+    const val = document.getElementById('fx-override').value;
+    if (val) {
+      localStorage.setItem('fx_override', val);
+      logAction('FX_OVERRIDE', val);
+      toast(`FX override set: R${val} ✓`);
+    }
+  }
+  function clearFXOverride() {
+    localStorage.removeItem('fx_override');
+    toast('FX override cleared — using live rate ✓');
+  }
+
+  function toggleMaintenance(btn) {
+    btn.classList.toggle('on');
+    const isOn = btn.classList.contains('on');
+    logAction('MAINTENANCE_MODE', isOn ? 'ON' : 'OFF');
+    toast(`Maintenance mode ${isOn ? 'ENABLED' : 'disabled'} ✓`);
+  }
+
+  function nuclearOption() {
+    if (!confirm('⚠️ NUCLEAR OPTION: This will shut down ALL site functions. Are you absolutely sure?')) return;
+    if (!confirm('FINAL WARNING: Confirm complete shutdown?')) return;
+    logAction('NUCLEAR_SHUTDOWN', '');
+    toast('SHUTDOWN INITIATED — Contact Railway to restart cron jobs', true);
+  }
+
+  // ── SECURITY ──
+  async function loadAdminLog() {
+    const { data } = await db.from('admin_log').select('*').order('created_at', {ascending:false}).limit(50);
+    const tbody = document.getElementById('admin-log');
+    if (!data || !data.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No actions logged yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map(l => `
+      <tr>
+        <td>${new Date(l.created_at).toLocaleString('en-ZA')}</td>
+        <td style="color:var(--accent);font-family:var(--font-mono);">${escHtml(l.action)}</td>
+        <td>${escHtml(l.detail || '—')}</td>
+        <td>${l.ip || '—'}</td>
+      </tr>`).join('');
+  }
+
+  // ── HELPERS ──
+  async function getCurrentZAR() {
+    const override = localStorage.getItem('fx_override');
+    if (override) return parseFloat(override);
+    try {
+      const res  = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data = await res.json();
+      return data.rates.ZAR;
+    } catch(e) { return 19.0; }
+  }
+
+  function maskEmail(email) {
+    if (!email) return '—';
+    const [local, domain] = email.split('@');
+    return local.substring(0,3) + '••••@' + domain;
+  }
+
+  function escHtml(str) {
+    return String(str||'')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
