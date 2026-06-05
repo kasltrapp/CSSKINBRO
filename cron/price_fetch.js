@@ -15,7 +15,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const MIN_PRICE_USD  = 25;
 const MIN_MOVE_PCT   = 5;
-const PRICE_API = 'https://api.steampowered.com/ISteamEconomy/GetAssetPrices/v1/?appid=730&currency=ZAR&key=';
+const PRICE_API = 'https://prices.csgotrader.app/latest/prices.json';
 const FX_API         = 'https://open.er-api.com/v6/latest/USD';
 
 // Keywords that indicate knives or gloves
