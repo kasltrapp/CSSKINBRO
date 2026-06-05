@@ -22,31 +22,67 @@ const FX_API        = 'https://open.er-api.com/v6/latest/USD';
 
 // Curated list of high-value skins to track
 const SKINS = [
+  // AK-47
   'AK-47 | Anubis (Field-Tested)',
   'AK-47 | Case Hardened (Factory New)',
   'AK-47 | Fuel Injector (Factory New)',
-  'Desert Eagle | Printstream (Field-Tested)',
-  'Desert Eagle | Printstream (Factory New)',
+  'AK-47 | Fire Serpent (Field-Tested)',
+  'AK-47 | Redline (Field-Tested)',
+  'AK-47 | Asiimov (Field-Tested)',
+  // M4A4 / M4A1-S
   'M4A4 | In Living Color (Field-Tested)',
+  'M4A4 | Howl (Field-Tested)',
   'M4A1-S | Printstream (Factory New)',
-  'AWP | Asiimov (Field-Tested)',
+  'M4A1-S | Driver Gloves (Factory New)',
+  'M4A1-S | Hyper Beast (Factory New)',
+  // AWP
   'AWP | Dragon Lore (Factory New)',
+  'AWP | Gungnir (Factory New)',
+  'AWP | Asiimov (Field-Tested)',
+  'AWP | Fade (Factory New)',
+  'AWP | Medusa (Factory New)',
+  // Desert Eagle
+  'Desert Eagle | Printstream (Factory New)',
+  'Desert Eagle | Printstream (Field-Tested)',
+  'Desert Eagle | Blaze (Factory New)',
+  'Desert Eagle | Conspiracy (Factory New)',
+  // USP-S
+  'USP-S | Printstream (Factory New)',
   'USP-S | The Traitor (Field-Tested)',
+  'USP-S | Kill Confirmed (Factory New)',
+  // Glock
   'Glock-18 | Vogue (Field-Tested)',
+  'Glock-18 | Fade (Factory New)',
+  // Other rifles
+  'SSG 08 | Blood in the Water (Factory New)',
+  'MAC-10 | Neon Rider (Factory New)',
+  // Knives
   '★ Butterfly Knife | Gamma Doppler (Factory New)',
   '★ Butterfly Knife | Fade (Factory New)',
   '★ Butterfly Knife | Lore (Factory New)',
+  '★ Butterfly Knife | Doppler (Factory New)',
   '★ Karambit | Fade (Factory New)',
   '★ Karambit | Gamma Doppler (Factory New)',
+  '★ Karambit | Doppler (Factory New)',
+  '★ Karambit | Case Hardened (Factory New)',
   '★ M9 Bayonet | Gamma Doppler (Factory New)',
+  '★ M9 Bayonet | Fade (Factory New)',
   '★ Talon Knife | Doppler (Factory New)',
+  '★ Talon Knife | Fade (Factory New)',
   '★ Kukri Knife | Doppler (Factory New)',
+  '★ Kukri Knife | Fade (Factory New)',
   '★ Shadow Daggers | Gamma Doppler (Factory New)',
+  '★ Stiletto Knife | Doppler (Factory New)',
+  '★ Ursus Knife | Doppler (Factory New)',
+  '★ Flip Knife | Gamma Doppler (Factory New)',
+  // Gloves
   'Sport Gloves | Pandora\'s Box (Field-Tested)',
   'Sport Gloves | Slingshot (Field-Tested)',
+  'Sport Gloves | Nocts (Field-Tested)',
   'Broken Fang Gloves | Jade (Field-Tested)',
   'Specialist Gloves | Marble Fade (Field-Tested)',
-  'Driver Gloves | Snow Leopard (Field-Tested)'
+  'Driver Gloves | Snow Leopard (Field-Tested)',
+  'Hand Wraps | Cobalt Skulls (Field-Tested)'
 ];
 
 // Keywords that indicate knives or gloves
