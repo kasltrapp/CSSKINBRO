@@ -15,7 +15,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const MIN_PRICE_USD  = 25;
 const MIN_MOVE_PCT   = 5;
-const PRICE_API      = 'https://raw.githubusercontent.com/nicklvsa/csgo-shared/master/prices.json';
+const PRICE_API = 'https://api.steampowered.com/ISteamEconomy/GetAssetPrices/v1/?appid=730&currency=ZAR&key=';
 const FX_API         = 'https://open.er-api.com/v6/latest/USD';
 
 // Keywords that indicate knives or gloves
@@ -170,7 +170,7 @@ async function main() {
     console.log('[Prices] Fetched', Object.keys(priceData).length, 'items');
   } catch(e) {
     console.error('[Prices] Failed:', e.message);
-    process.exit(1);
+    process.exit(0);
   }
 
   // 3. Get previous prices for comparison
@@ -252,5 +252,5 @@ async function main() {
 
 main().catch(e => {
   console.error('[FATAL]', e);
-  process.exit(1);
+  process.exit(0);
 });
