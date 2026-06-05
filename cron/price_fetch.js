@@ -15,7 +15,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const MIN_PRICE_USD  = 25;
 const MIN_MOVE_PCT   = 5;
-const PRICE_API = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/all.json';
+const PRICE_API = 'https://api.steampowered.com/ISteamEconomy/GetAssetPrices/v1/?appid=730&currency=ZAR&key=';
 const FX_API         = 'https://open.er-api.com/v6/latest/USD';
 
 // Keywords that indicate knives or gloves
@@ -37,7 +37,9 @@ async function getFXRate() {
 async function getPrices() {
   const res = await fetch(PRICE_API);
   if (!res.ok) throw new Error(`CSGOTrader API error: ${res.status}`);
-  return res.json();
+const text = await res.text();
+console.log('[Prices] Response preview:', text.substring(0, 200));
+return JSON.parse(text);
 }
 
 function isKnife(name) {
