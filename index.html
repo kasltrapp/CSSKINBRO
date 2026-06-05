@@ -1,10 +1,625 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>CSSKINBRO — Coming Soon</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KASTLR CSGO South Africa</title>
+  <meta name="description" content="South Africa's CS2 hub. Live ZAR skin prices, Africa leaderboard, price alerts."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:       #080B0F;
+      --surface:  #0E1318;
+      --border:   #1C2430;
+      --accent:   #00E5A0;
+      --accent2:  #FF4655;
+      --gold:     #F5C842;
+      --text:     #E8EDF3;
+      --muted:    #5A6A7A;
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-mono:    'DM Mono', monospace;
+      --font-body:    'DM Sans', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── GRID BACKGROUND ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 64px;
+      background: rgba(8,11,15,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--text); }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-badge {
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 2px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    /* ── AD BANNER TOP ── */
+    .ad-banner-top {
+      margin-top: 64px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 90px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ad-banner-top .ad-placeholder {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      opacity: 0.35;
+    }
+    .ad-label {
+      position: absolute;
+      top: 6px; right: 12px;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+    .ad-placeholder-text {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: 1px dashed var(--border);
+      padding: 12px 40px;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      padding: 100px 40px 80px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero-eyebrow span {
+      display: inline-block;
+      width: 32px;
+      height: 1px;
+      background: var(--accent);
+      vertical-align: middle;
+      margin-right: 12px;
+    }
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(60px, 10vw, 120px);
+      line-height: 0.9;
+      letter-spacing: 2px;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+      display: block;
+    }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+    .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+      padding: 14px 32px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-radius: 2px;
+      transition: opacity .2s, transform .2s;
+    }
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-secondary {
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 14px 32px;
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      border-radius: 2px;
+      transition: border-color .2s, color .2s;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+    .stat-item {
+      flex: 1;
+      max-width: 280px;
+      padding: 32px 24px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: 48px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    /* ── FEATURES ── */
+    .features {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 100px 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2px;
+    }
+    .feature-card {
+      background: var(--surface);
+      padding: 40px 32px;
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: border-color .3s;
+      text-decoration: none;
+      display: block;
+      color: inherit;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .3s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-card:hover::before { transform: scaleX(1); }
+    .feature-num {
+      font-family: var(--font-display);
+      font-size: 72px;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 20px;
+      transition: color .3s;
+    }
+    .feature-card:hover .feature-num { color: var(--accent); opacity: 0.2; }
+    .feature-icon { font-size: 32px; margin-bottom: 16px; }
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .feature-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .feature-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    /* ── AD MID ── */
+    .ad-mid {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto 60px;
+      padding: 0 40px;
+    }
+    .ad-mid-inner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .ad-mid-inner .ad-label { top: 8px; right: 12px; }
+    .ad-mid-inner .ad-placeholder-text { opacity: 0.3; }
+
+    /* ── TICKER ── */
+    .ticker-wrap {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    .ticker-label {
+      flex-shrink: 0;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 0 16px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .ticker-track {
+      display: flex;
+      animation: ticker 30s linear infinite;
+      white-space: nowrap;
+    }
+    .ticker-item {
+      padding: 0 40px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ticker-item .up { color: var(--accent); }
+    .ticker-item .down { color: var(--accent2); }
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 48px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+    .footer-logo span { color: var(--muted); }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    /* ── SPONSOR STRIP ── */
+    .sponsor-strip {
+      position: relative;
+      z-index: 1;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .sponsor-strip-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .sponsor-slots {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .sponsor-slot {
+      border: 1px dashed var(--border);
+      padding: 10px 24px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      opacity: 0.4;
+      text-transform: uppercase;
+    }
+
+    /* ── LIVE DOT ── */
+    .live-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,229,160,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,229,160,0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .hero { padding: 60px 20px; }
+      .features { padding: 60px 20px; grid-template-columns: 1fr; }
+      .stats-bar { flex-wrap: wrap; }
+      .stat-item { min-width: 50%; border-right: 1px solid var(--border); }
+      footer { padding: 32px 20px; flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
-    <h1>Coming Soon</h1>
+
+  <!-- NAV -->
+  <nav>
+    <a class="nav-logo" href="/">KAS<span>TLR</span></a>
+    <div class="nav-links">
+      <a href="/leaderboard/">Leaderboard</a>
+      <a href="/prices/">Prices</a>
+      <a href="/watchlist/">Watchlist</a>
+      <a href="https://x.com/kastlrcsgo" target="_blank">X / Twitter</a>
+      <a class="nav-badge" href="/watchlist/">Set Alert</a>
+    </div>
+  </nav>
+
+  <!-- TOP AD BANNER -->
+  <div class="ad-banner-top" id="ad-top">
+    <span class="ad-label">Advertisement</span>
+    <div class="ad-placeholder">
+      <div class="ad-placeholder-text">728 × 90 — Premium Banner Slot — Contact to Advertise</div>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-label"><span class="live-dot"></span>Live</div>
+    <div class="ticker-track" id="ticker">
+      <!-- Populated by JS from Supabase -->
+      <div class="ticker-item">AK-47 | Anubis FT <span class="up">↑ +4.2%</span> R892</div>
+      <div class="ticker-item">★ Butterfly Knife | Gamma Doppler P2 FN <span class="up">↑ +11.3%</span> R187,400</div>
+      <div class="ticker-item">Desert Eagle | Printstream FT <span class="up">↑ +2.1%</span> R712</div>
+      <div class="ticker-item">M4A4 | In Living Color FT <span class="up">↑ +22.8%</span> R680</div>
+      <div class="ticker-item">AWP | Asiimov FT <span class="down">↓ -1.4%</span> R1,840</div>
+      <div class="ticker-item">★ Karambit | Fade FN <span class="up">↑ +3.8%</span> R42,200</div>
+      <!-- Duplicated for seamless loop -->
+      <div class="ticker-item">AK-47 | Anubis FT <span class="up">↑ +4.2%</span> R892</div>
+      <div class="ticker-item">★ Butterfly Knife | Gamma Doppler P2 FN <span class="up">↑ +11.3%</span> R187,400</div>
+      <div class="ticker-item">Desert Eagle | Printstream FT <span class="up">↑ +2.1%</span> R712</div>
+      <div class="ticker-item">M4A4 | In Living Color FT <span class="up">↑ +22.8%</span> R680</div>
+      <div class="ticker-item">AWP | Asiimov FT <span class="down">↓ -1.4%</span> R1,840</div>
+      <div class="ticker-item">★ Karambit | Fade FN <span class="up">↑ +3.8%</span> R42,200</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow"><span></span>South Africa's CS2 Hub</div>
+    <h1>SKIN<em>INTEL</em>ZA</h1>
+    <p class="hero-sub">Live CS2 skin prices in Rand. Africa's player rankings. Price alerts when your target hits. Built for South African players.</p>
+    <div class="hero-ctas">
+      <a href="/leaderboard/" class="btn-primary">Africa Leaderboard</a>
+      <a href="/prices/" class="btn-secondary">ZAR Prices</a>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-value" id="stat-skins">18,400+</div>
+      <div class="stat-label">Skins Tracked</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stat-players">1,000</div>
+      <div class="stat-label">Africa Rankings</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="stat-rate" style="font-size:36px;">Loading...</div>
+      <div class="stat-label">USD / ZAR Live Rate</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value">24/7</div>
+      <div class="stat-label">Price Updates</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <a href="/leaderboard/" class="feature-card">
+      <div class="feature-num">01</div>
+      <div class="feature-icon">🏆</div>
+      <div class="feature-title">Africa Leaderboard</div>
+      <p class="feature-desc">Top 1,000 CS2 Premier players on the Africa region. Updated daily. See where you stack up. Old school rankboard energy.</p>
+      <div class="feature-link">View Rankings →</div>
+    </a>
+    <a href="/prices/" class="feature-card">
+      <div class="feature-num">02</div>
+      <div class="feature-icon">💹</div>
+      <div class="feature-title">ZAR Price Tracker</div>
+      <p class="feature-desc">Every CS2 skin priced in Rand. Live USD/ZAR conversion. Know exactly what you're paying before you trade.</p>
+      <div class="feature-link">Check Prices →</div>
+    </a>
+    <a href="/prices/#deal-checker" class="feature-card">
+      <div class="feature-num">03</div>
+      <div class="feature-icon">🎯</div>
+      <div class="feature-title">Deal Checker</div>
+      <p class="feature-desc">Paste any ZAR asking price. We tell you if it's fair, below market, or a rip-off. No more guessing on trades.</p>
+      <div class="feature-link">Check a Deal →</div>
+    </a>
+    <a href="/watchlist/" class="feature-card">
+      <div class="feature-num">04</div>
+      <div class="feature-icon">🔔</div>
+      <div class="feature-title">Price Alerts</div>
+      <p class="feature-desc">Set a ZAR target. Get emailed when your skin hits the price. No account needed. Just your email and your skin.</p>
+      <div class="feature-link">Set Alert →</div>
+    </a>
+  </section>
+
+  <!-- MID AD -->
+  <div class="ad-mid">
+    <div class="ad-mid-inner" id="ad-mid">
+      <span class="ad-label">Advertisement</span>
+      <div class="ad-placeholder-text">970 × 90 — Advertise Here — Contact via X @KASTLRCSGO</div>
+    </div>
+  </div>
+
+  <!-- SPONSOR STRIP -->
+  <div class="sponsor-strip">
+    <div class="sponsor-strip-label">Partners</div>
+    <div class="sponsor-slots">
+      <div class="sponsor-slot">Your Brand Here</div>
+      <div class="sponsor-slot">Your Brand Here</div>
+      <div class="sponsor-slot">Your Brand Here</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">KAS<span>TLR</span></div>
+    <div class="footer-links">
+      <a href="/leaderboard/">Leaderboard</a>
+      <a href="/prices/">Prices</a>
+      <a href="/watchlist/">Watchlist</a>
+      <a href="https://x.com/kastlrcsgo" target="_blank">X</a>
+      <a href="/privacy/">Privacy</a>
+      <a href="/terms/">Terms</a>
+    </div>
+    <div class="footer-copy">© 2026 KASTLR — Not affiliated with Valve Corporation</div>
+  </footer>
+
+  <script>
+    // Live FX rate
+    async function loadFXRate() {
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        const rate = data.rates.ZAR;
+        document.getElementById('stat-rate').textContent = 'R' + rate.toFixed(2);
+      } catch(e) {
+        document.getElementById('stat-rate').textContent = '—';
+      }
+    }
+    loadFXRate();
+  </script>
 </body>
 </html>
