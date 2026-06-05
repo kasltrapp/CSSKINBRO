@@ -184,10 +184,11 @@ async function fetchPrice(marketHashName) {
     const res  = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (!res.ok) return null;
     const data = await res.json();
-    if (data.success && data.lowest_price) {
-      return parseFloat(data.lowest_price.replace(/[^0-9.]/g, ''));
-    }
-    return null;
+    if (!data.success) return null;
+    // Use lowest_price if available, fall back to median_price (knives/gloves are low volume)
+    const raw = data.lowest_price || data.median_price;
+    if (!raw) return null;
+    return parseFloat(raw.replace(/[^0-9.]/g, ''));
   } catch(e) {
     return null;
   }
