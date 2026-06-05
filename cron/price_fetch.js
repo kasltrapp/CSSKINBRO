@@ -1,6 +1,6 @@
 // cron/price_fetch.js
 // Railway cron — runs every 6 hours
-// Uses free prices.csgotrader.app — no API key needed
+// Uses Steam Market API — free, no key, no blocking
 
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
@@ -13,14 +13,42 @@ const FROM_EMAIL    = process.env.RESEND_FROM_EMAIL || 'alerts@kastlr.com';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const MIN_PRICE_USD  = 25;
-const MIN_MOVE_PCT   = 5;
-const PRICE_API = 'https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/all.json;
-const FX_API         = 'https://open.er-api.com/v6/latest/USD';
+const MIN_PRICE_USD = 25;
+const MIN_MOVE_PCT  = 5;
+const FX_API        = 'https://open.er-api.com/v6/latest/USD';
+
+// Curated list of high-value skins to track
+const SKINS = [
+  'AK-47 | Anubis (Field-Tested)',
+  'AK-47 | Case Hardened (Factory New)',
+  'AK-47 | Fuel Injector (Factory New)',
+  'Desert Eagle | Printstream (Field-Tested)',
+  'Desert Eagle | Printstream (Factory New)',
+  'M4A4 | In Living Color (Field-Tested)',
+  'M4A1-S | Printstream (Factory New)',
+  'AWP | Asiimov (Field-Tested)',
+  'AWP | Dragon Lore (Factory New)',
+  'USP-S | The Traitor (Field-Tested)',
+  'Glock-18 | Vogue (Field-Tested)',
+  '★ Butterfly Knife | Gamma Doppler (Factory New)',
+  '★ Butterfly Knife | Fade (Factory New)',
+  '★ Butterfly Knife | Lore (Factory New)',
+  '★ Karambit | Fade (Factory New)',
+  '★ Karambit | Gamma Doppler (Factory New)',
+  '★ M9 Bayonet | Gamma Doppler (Factory New)',
+  '★ Talon Knife | Doppler (Factory New)',
+  '★ Kukri Knife | Doppler (Factory New)',
+  '★ Shadow Daggers | Gamma Doppler (Factory New)',
+  'Sport Gloves | Pandora\'s Box (Field-Tested)',
+  'Sport Gloves | Slingshot (Field-Tested)',
+  'Broken Fang Gloves | Jade (Field-Tested)',
+  'Specialist Gloves | Marble Fade (Field-Tested)',
+  'Driver Gloves | Snow Leopard (Field-Tested)'
+];
 
 // Keywords that indicate knives or gloves
-const KNIFE_WORDS  = ['knife','karambit','butterfly','bayonet','falchion','flip','gut','huntsman','m9','navaja','shadow daggers','stiletto','talon','ursus','paracord','nomad','survival','skeleton','classic knife','kukri'];
-const GLOVE_WORDS  = ['gloves','hand wraps','wraps'];
+const KNIFE_WORDS = ['knife','karambit','butterfly','bayonet','falchion','flip','gut','huntsman','m9','navaja','shadow daggers','stiletto','talon','ursus','paracord','nomad','survival','skeleton','classic knife','kukri'];
+const GLOVE_WORDS = ['gloves','hand wraps','wraps'];
 // ────────────────────────────────────────────────────────────────────────────
 
 async function getFXRate() {
@@ -35,11 +63,34 @@ async function getFXRate() {
 }
 
 async function getPrices() {
-  const res = await fetch(PRICE_API);
-  if (!res.ok) throw new Error(`CSGOTrader API error: ${res.status}`);
-const text = await res.text();
-console.log('[Prices] Response preview:', text.substring(0, 200));
-return JSON.parse(text);
+  const results = {};
+  for (const name of SKINS) {
+    try {
+      const url = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(name)}`;
+      const res  = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      if (!res.ok) {
+        console.log(`[Prices] Skipped ${name}: HTTP ${res.status}`);
+        await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
+      const data = await res.json();
+      if (data.success && data.lowest_price) {
+        const price = parseFloat(data.lowest_price.replace(/[^0-9.]/g, ''));
+        if (price > 0) {
+          results[name] = price;
+          console.log(`[Prices] ${name}: $${price}`);
+        }
+      }
+      // Wait 3 seconds between requests to respect Steam rate limits
+      await new Promise(r => setTimeout(r, 3000));
+    } catch(e) {
+      console.log(`[Prices] Skipped ${name}:`, e.message);
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  return results;
 }
 
 function isKnife(name) {
@@ -52,23 +103,10 @@ function isGloves(name) {
   return GLOVE_WORDS.some(k => n.includes(k));
 }
 
-function getUSDPrice(item) {
-  // CSGOTrader format: item can have steam, buff, etc
-  if (!item) return 0;
-  if (typeof item === 'number') return item;
-  // Try different price sources in order of preference
-  return item.buff163?.starting_at?.price
-    || item.steam?.last_24h
-    || item.steam?.last_7d
-    || item.steam?.last_30d
-    || item.bitskins?.price
-    || 0;
-}
-
 function buildPostText(movers, zarRate) {
   if (!movers.length) return null;
-  const top  = movers[0];
-  const sign = top.changePct > 0 ? '↑' : '↓';
+  const top   = movers[0];
+  const sign  = top.changePct > 0 ? '↑' : '↓';
   const emoji = top.changePct > 0 ? '🟢' : '🔴';
   const prefix = (isKnife(top.name) || isGloves(top.name)) ? '★ ' : '';
 
@@ -124,7 +162,6 @@ async function checkAndSendAlerts(zarRate) {
 
     if (!triggered) continue;
 
-    // Send email via Resend
     try {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -149,7 +186,7 @@ async function checkAndSendAlerts(zarRate) {
         .update({ alert_sent: true, alert_sent_at: new Date() })
         .eq('id', alert.id);
 
-      console.log(`[Alerts] Sent alert to ${alert.email} for ${alert.skin_name}`);
+      console.log(`[Alerts] Sent to ${alert.email} for ${alert.skin_name}`);
     } catch(e) {
       console.error('[Alerts] Email failed:', e.message);
     }
@@ -162,16 +199,20 @@ async function main() {
   // 1. FX rate
   const zarRate = await getFXRate();
   console.log('[FX] USD/ZAR:', zarRate);
-
   await supabase.from('fx_rates').insert({ rate: zarRate, timestamp: new Date() });
 
-  // 2. Get prices
+  // 2. Get prices from Steam Market
   let priceData;
   try {
     priceData = await getPrices();
     console.log('[Prices] Fetched', Object.keys(priceData).length, 'items');
   } catch(e) {
     console.error('[Prices] Failed:', e.message);
+    process.exit(0);
+  }
+
+  if (Object.keys(priceData).length === 0) {
+    console.log('[Prices] No data returned, exiting cleanly.');
     process.exit(0);
   }
 
@@ -187,16 +228,15 @@ async function main() {
     if (!prevMap[p.skin_name]) prevMap[p.skin_name] = p.usd_price;
   });
 
-  // 4. Process eligible skins
+  // 4. Process skins
   const inserts = [];
   const movers  = [];
 
-  for (const [name, item] of Object.entries(priceData)) {
-    const priceUSD = getUSDPrice(item);
+  for (const [name, priceUSD] of Object.entries(priceData)) {
     if (!priceUSD || priceUSD < MIN_PRICE_USD) continue;
 
-    const knife    = isKnife(name);
-    const gloves   = isGloves(name);
+    const knife     = isKnife(name);
+    const gloves    = isGloves(name);
     const prevPrice = prevMap[name];
     const changePct = prevPrice
       ? ((priceUSD - prevPrice) / prevPrice) * 100
@@ -220,19 +260,17 @@ async function main() {
     }
   }
 
-  // 5. Batch insert
-  const BATCH = 1000;
-  for (let i = 0; i < inserts.length; i += BATCH) {
-    const { error } = await supabase.from('skin_prices').insert(inserts.slice(i, i + BATCH));
+  // 5. Insert to Supabase
+  if (inserts.length > 0) {
+    const { error } = await supabase.from('skin_prices').insert(inserts);
     if (error) console.error('[Supabase] Insert error:', error.message);
+    else console.log(`[Prices] Stored ${inserts.length} skins`);
   }
-  console.log(`[Prices] Stored ${inserts.length} skins`);
 
-  // 6. Log notable movers
+  // 6. Queue social post if movers found
   movers.sort((a, b) => b.priority - a.priority);
   console.log(`[Movers] ${movers.length} notable movers`);
 
-  // 7. Log post to social_posts table (Make.com picks this up)
   if (movers.length > 0) {
     const postText = buildPostText(movers, zarRate);
     if (postText) {
@@ -246,7 +284,7 @@ async function main() {
     }
   }
 
-  // 8. Check price alerts
+  // 7. Check alerts
   await checkAndSendAlerts(zarRate);
 
   console.log('[PriceFetch] Done at', new Date().toISOString());
