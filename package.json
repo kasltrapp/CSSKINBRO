@@ -1,0 +1,16 @@
+{
+  "name": "kastlr-cron",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node cron/price_fetch.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "node-fetch": "^3.3.2",
+    "resend": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
