@@ -3,8 +3,8 @@
 // Uses Steam Market API — free, no key, no blocking
 
 import { createClient } from '@supabase/supabase-js';
-import ws from 'ws';
 import fetch from 'node-fetch';
+import ws from 'ws';
 
 const SUPABASE_URL  = process.env.SUPABASE_URL;
 const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_KEY;
@@ -20,43 +20,31 @@ const MIN_PRICE_USD = 25;
 const MIN_MOVE_PCT  = 5;
 const FX_API        = 'https://open.er-api.com/v6/latest/USD';
 
-// Curated list of high-value skins to track
 const SKINS = [
-  // AK-47
   'AK-47 | Anubis (Field-Tested)',
   'AK-47 | Case Hardened (Factory New)',
   'AK-47 | Fuel Injector (Factory New)',
   'AK-47 | Fire Serpent (Field-Tested)',
   'AK-47 | Redline (Field-Tested)',
   'AK-47 | Asiimov (Field-Tested)',
-  // M4A4 / M4A1-S
   'M4A4 | In Living Color (Field-Tested)',
   'M4A4 | Howl (Field-Tested)',
   'M4A1-S | Printstream (Factory New)',
-  'M4A1-S | Driver Gloves (Factory New)',
   'M4A1-S | Hyper Beast (Factory New)',
-  // AWP
   'AWP | Dragon Lore (Factory New)',
   'AWP | Gungnir (Factory New)',
   'AWP | Asiimov (Field-Tested)',
   'AWP | Fade (Factory New)',
   'AWP | Medusa (Factory New)',
-  // Desert Eagle
   'Desert Eagle | Printstream (Factory New)',
   'Desert Eagle | Printstream (Field-Tested)',
   'Desert Eagle | Blaze (Factory New)',
-  'Desert Eagle | Conspiracy (Factory New)',
-  // USP-S
   'USP-S | Printstream (Factory New)',
   'USP-S | The Traitor (Field-Tested)',
   'USP-S | Kill Confirmed (Factory New)',
-  // Glock
   'Glock-18 | Vogue (Field-Tested)',
   'Glock-18 | Fade (Factory New)',
-  // Other rifles
   'SSG 08 | Blood in the Water (Factory New)',
-  'MAC-10 | Neon Rider (Factory New)',
-  // Knives
   '★ Butterfly Knife | Gamma Doppler (Factory New)',
   '★ Butterfly Knife | Fade (Factory New)',
   '★ Butterfly Knife | Lore (Factory New)',
@@ -64,7 +52,6 @@ const SKINS = [
   '★ Karambit | Fade (Factory New)',
   '★ Karambit | Gamma Doppler (Factory New)',
   '★ Karambit | Doppler (Factory New)',
-  '★ Karambit | Case Hardened (Factory New)',
   '★ M9 Bayonet | Gamma Doppler (Factory New)',
   '★ M9 Bayonet | Fade (Factory New)',
   '★ Talon Knife | Doppler (Factory New)',
@@ -75,7 +62,6 @@ const SKINS = [
   '★ Stiletto Knife | Doppler (Factory New)',
   '★ Ursus Knife | Doppler (Factory New)',
   '★ Flip Knife | Gamma Doppler (Factory New)',
-  // Gloves
   'Sport Gloves | Pandora\'s Box (Field-Tested)',
   'Sport Gloves | Slingshot (Field-Tested)',
   'Sport Gloves | Nocts (Field-Tested)',
@@ -85,7 +71,6 @@ const SKINS = [
   'Hand Wraps | Cobalt Skulls (Field-Tested)'
 ];
 
-// Keywords that indicate knives or gloves
 const KNIFE_WORDS = ['knife','karambit','butterfly','bayonet','falchion','flip','gut','huntsman','m9','navaja','shadow daggers','stiletto','talon','ursus','paracord','nomad','survival','skeleton','classic knife','kukri'];
 const GLOVE_WORDS = ['gloves','hand wraps','wraps'];
 // ────────────────────────────────────────────────────────────────────────────
@@ -106,24 +91,43 @@ async function getPrices() {
   for (const name of SKINS) {
     try {
       const url = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(name)}`;
-      const res  = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0' }
-      });
+      const res  = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+
       if (!res.ok) {
         console.log(`[Prices] Skipped ${name}: HTTP ${res.status}`);
         await new Promise(r => setTimeout(r, 3000));
         continue;
       }
+
       const data = await res.json();
       if (data.success && data.lowest_price) {
         const price = parseFloat(data.lowest_price.replace(/[^0-9.]/g, ''));
         if (price > 0) {
-          results[name] = price;
+          results[name] = { price, icon_url: null };
           console.log(`[Prices] ${name}: $${price}`);
         }
       }
-      // Wait 3 seconds between requests to respect Steam rate limits
-      await new Promise(r => setTimeout(r, 3000));
+
+      // Fetch icon URL from Steam market listing
+      try {
+        await new Promise(r => setTimeout(r, 1500));
+        const iconRes  = await fetch(
+          `https://steamcommunity.com/market/listings/730/${encodeURIComponent(name)}/render?count=1&currency=1&language=english&format=json`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' } }
+        );
+        const iconData = await iconRes.json();
+        const assets   = iconData?.assets?.['730']?.['2'];
+        if (assets && results[name]) {
+          const firstAsset = Object.values(assets)[0];
+          if (firstAsset?.icon_url) {
+            results[name].icon_url = `https://steamcommunity-a.akamaihd.net/economy/image/${firstAsset.icon_url}/360fx360f`;
+          }
+        }
+      } catch(e) {
+        // icon fetch failed silently
+      }
+
+      await new Promise(r => setTimeout(r, 2000));
     } catch(e) {
       console.log(`[Prices] Skipped ${name}:`, e.message);
       await new Promise(r => setTimeout(r, 3000));
@@ -133,20 +137,18 @@ async function getPrices() {
 }
 
 function isKnife(name) {
-  const n = name.toLowerCase();
-  return KNIFE_WORDS.some(k => n.includes(k));
+  return KNIFE_WORDS.some(k => name.toLowerCase().includes(k));
 }
 
 function isGloves(name) {
-  const n = name.toLowerCase();
-  return GLOVE_WORDS.some(k => n.includes(k));
+  return GLOVE_WORDS.some(k => name.toLowerCase().includes(k));
 }
 
 function buildPostText(movers, zarRate) {
   if (!movers.length) return null;
-  const top   = movers[0];
-  const sign  = top.changePct > 0 ? '↑' : '↓';
-  const emoji = top.changePct > 0 ? '🟢' : '🔴';
+  const top    = movers[0];
+  const sign   = top.changePct > 0 ? '↑' : '↓';
+  const emoji  = top.changePct > 0 ? '🟢' : '🔴';
   const prefix = (isKnife(top.name) || isGloves(top.name)) ? '★ ' : '';
 
   const lines = [
@@ -232,6 +234,36 @@ async function checkAndSendAlerts(zarRate) {
   }
 }
 
+async function fetchLeaderboard() {
+  try {
+    const res = await fetch('https://explodingcamera.github.io/cs2leaderboard/data/latest/africa.json');
+    if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
+    const data = await res.json();
+    if (!data || !data.length) throw new Error('No leaderboard data');
+
+    await supabase.from('leaderboard')
+      .delete()
+      .eq('snapshot_date', new Date().toISOString().split('T')[0]);
+
+    const inserts = data.slice(0, 1000).map(p => ({
+      player_name:   p.name,
+      cs_rating:     p.rating,
+      rank:          p.rank,
+      wins:          p.matches_won || 0,
+      losses:        p.matches_lost || 0,
+      map_stats:     p.map_stats || {},
+      snapshot_date: new Date().toISOString().split('T')[0],
+      region:        'africa',
+    }));
+
+    const { error } = await supabase.from('leaderboard').insert(inserts);
+    if (error) throw error;
+    console.log(`[Leaderboard] Stored ${inserts.length} players`);
+  } catch(e) {
+    console.error('[Leaderboard] Failed:', e.message);
+  }
+}
+
 async function main() {
   console.log('[PriceFetch] Starting run at', new Date().toISOString());
 
@@ -271,7 +303,8 @@ async function main() {
   const inserts = [];
   const movers  = [];
 
-  for (const [name, priceUSD] of Object.entries(priceData)) {
+  for (const [name, item] of Object.entries(priceData)) {
+    const priceUSD = item.price;
     if (!priceUSD || priceUSD < MIN_PRICE_USD) continue;
 
     const knife     = isKnife(name);
@@ -288,6 +321,7 @@ async function main() {
       rarity:     knife ? 'covert' : gloves ? 'extraordinary' : 'unknown',
       category:   knife ? 'knife' : gloves ? 'gloves' : 'weapon',
       change_pct: changePct,
+      icon_url:   item.icon_url || null,
       timestamp:  new Date(),
     });
 
@@ -325,38 +359,13 @@ async function main() {
 
   // 7. Check alerts
   await checkAndSendAlerts(zarRate);
+
+  // 8. Leaderboard
   await fetchLeaderboard();
+
   console.log('[PriceFetch] Done at', new Date().toISOString());
 }
-async function fetchLeaderboard() {
-  try {
-    const res = await fetch('https://explodingcamera.github.io/cs2leaderboard/data/latest/africa.json');
-    if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
-    const data = await res.json();
-    if (!data || !data.length) throw new Error('No leaderboard data');
 
-    await supabase.from('leaderboard')
-      .delete()
-      .eq('snapshot_date', new Date().toISOString().split('T')[0]);
-
-    const inserts = data.slice(0, 1000).map(p => ({
-      player_name:   p.name,
-      cs_rating:     p.rating,
-      rank:          p.rank,
-      wins:          p.matches_won || 0,
-      losses:        p.matches_lost || 0,
-      map_stats:     p.map_stats || {},
-      snapshot_date: new Date().toISOString().split('T')[0],
-      region:        'africa',
-    }));
-
-    const { error } = await supabase.from('leaderboard').insert(inserts);
-    if (error) throw error;
-    console.log(`[Leaderboard] Stored ${inserts.length} players`);
-  } catch(e) {
-    console.error('[Leaderboard] Failed:', e.message);
-  }
-}
 main().catch(e => {
   console.error('[FATAL]', e);
   process.exit(0);
