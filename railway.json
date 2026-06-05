@@ -1,6 +1,9 @@
 {
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "nixpacksPlan": {
+      "providers": ["node"]
+    }
   },
   "deploy": {
     "startCommand": "node cron/price_fetch.js"
