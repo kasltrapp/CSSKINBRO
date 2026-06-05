@@ -1,10 +1,1 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>CSSKINBRO — Coming Soon</title>
-</head>
-<body>
-    <h1>Coming Soon</h1>
-</body>
-</html>
+//placeholder
