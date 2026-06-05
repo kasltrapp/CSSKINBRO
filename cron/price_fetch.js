@@ -3,6 +3,7 @@
 // Uses Steam Market API — free, no key, no blocking
 
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 import fetch from 'node-fetch';
 
 const SUPABASE_URL  = process.env.SUPABASE_URL;
@@ -10,7 +11,9 @@ const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_KEY;
 const RESEND_KEY    = process.env.RESEND_API_KEY;
 const FROM_EMAIL    = process.env.RESEND_FROM_EMAIL || 'alerts@kastlr.com';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  realtime: { transport: ws }
+});
 
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const MIN_PRICE_USD = 25;
