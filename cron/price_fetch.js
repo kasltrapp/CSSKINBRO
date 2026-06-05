@@ -286,10 +286,38 @@ async function main() {
 
   // 7. Check alerts
   await checkAndSendAlerts(zarRate);
-
+  await fetchLeaderboard();
   console.log('[PriceFetch] Done at', new Date().toISOString());
 }
+async function fetchLeaderboard() {
+  try {
+    const res = await fetch('https://explodingcamera.github.io/cs2leaderboard/data/latest/africa.json');
+    if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
+    const data = await res.json();
+    if (!data || !data.length) throw new Error('No leaderboard data');
 
+    await supabase.from('leaderboard')
+      .delete()
+      .eq('snapshot_date', new Date().toISOString().split('T')[0]);
+
+    const inserts = data.slice(0, 1000).map(p => ({
+      player_name:   p.name,
+      cs_rating:     p.rating,
+      rank:          p.rank,
+      wins:          p.matches_won || 0,
+      losses:        p.matches_lost || 0,
+      map_stats:     p.map_stats || {},
+      snapshot_date: new Date().toISOString().split('T')[0],
+      region:        'africa',
+    }));
+
+    const { error } = await supabase.from('leaderboard').insert(inserts);
+    if (error) throw error;
+    console.log(`[Leaderboard] Stored ${inserts.length} players`);
+  } catch(e) {
+    console.error('[Leaderboard] Failed:', e.message);
+  }
+}
 main().catch(e => {
   console.error('[FATAL]', e);
   process.exit(0);
