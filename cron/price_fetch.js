@@ -116,7 +116,8 @@ async function getPrices() {
           { headers: { 'User-Agent': 'Mozilla/5.0' } }
         );
         const iconData = await iconRes.json();
-        const assets   = iconData?.assets?.['730']?.['2'];
+        console.log('[Icon] Response keys:', JSON.stringify(Object.keys(iconData || {})));
+const assets   = iconData?.assets?.['730']?.['2'];
         if (assets && results[name]) {
           const firstAsset = Object.values(assets)[0];
           if (firstAsset?.icon_url) {
