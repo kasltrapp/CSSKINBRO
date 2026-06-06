@@ -179,19 +179,22 @@ async function getFXRate() {
 }
 
 async function fetchPrice(marketHashName) {
-  try {
-    const url = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(marketHashName)}`;
-    const res  = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data.success) return null;
-    // Use lowest_price if available, fall back to median_price (knives/gloves are low volume)
-    const raw = data.lowest_price || data.median_price;
-    if (!raw) return null;
-    return parseFloat(raw.replace(/[^0-9.]/g, ''));
-  } catch(e) {
-    return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const url = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(marketHashName)}`;
+      const res  = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+      if (!res.ok) { await new Promise(r => setTimeout(r, 8000)); continue; }
+      const data = await res.json();
+      if (!data.success) { await new Promise(r => setTimeout(r, 8000)); continue; }
+      const raw = data.lowest_price || data.median_price;
+      if (!raw) { await new Promise(r => setTimeout(r, 8000)); continue; }
+      return parseFloat(raw.replace(/[^0-9.]/g, ''));
+    } catch(e) {
+      await new Promise(r => setTimeout(r, 8000));
+    }
   }
+  return null;
+}
 }
 
 function buildPostText(movers, zarRate) {
@@ -285,7 +288,7 @@ async function main() {
         const gloves    = isGloves(base);
 
         const priceUSD = await fetchPrice(fullName);
-        await new Promise(r => setTimeout(r, 2500));
+        await new Promise(r => setTimeout(r, 4000));
 
         if (!priceUSD || priceUSD < 1) {
           console.log(`[Skip] ${fullName}`);
