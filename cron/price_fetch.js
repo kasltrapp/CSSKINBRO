@@ -110,6 +110,7 @@ async function main() {
       sold_30d:          item.sold30d    || 0,
       buy_order:         item.buyorderprice || null,
       offer_volume:      item.offervolume   || 0,
+	  image_url:   		 item.image,
       steam_url:         item.steamurl,
 	  variants:          item.variants || null,
 	  updated_at:        new Date(),
