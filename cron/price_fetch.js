@@ -1,15 +1,17 @@
-// cron/price_fetch.js - v5
-// 90 iconic skins, all wears, Normal + StatTrak
-// Steam Market API - free, no key needed
+// cron/price_fetch_v6.js
+// KASTLR CS2 Full Market Index
+// Uses steamwebapi.com Item+ — pulls entire CS2 catalog once daily
+// Upserts into cs2_prices — no accumulation, stays in free Supabase tier
 
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
 import ws from 'ws';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const RESEND_KEY   = process.env.RESEND_API_KEY;
-const FROM_EMAIL   = process.env.RESEND_FROM_EMAIL || 'alerts@kastlr.com';
+const SUPABASE_URL    = process.env.SUPABASE_URL;
+const SUPABASE_KEY    = process.env.SUPABASE_SERVICE_KEY;
+const SWAPI_KEY       = process.env.STEAMWEBAPI_KEY;   // new env var
+const RESEND_KEY      = process.env.RESEND_API_KEY;
+const FROM_EMAIL      = process.env.RESEND_FROM_EMAIL || 'alerts@kastlr.com';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { transport: ws }
@@ -17,212 +19,156 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 const FX_API = 'https://open.er-api.com/v6/latest/USD';
 
-const WEARS = ['Factory New','Minimal Wear','Field-Tested','Well-Worn','Battle-Scarred'];
-
-// 90 base skin names - we generate all wear variants automatically
-const BASE_SKINS = [
-  // AK-47 (15)
-  'AK-47 | Redline',
-  'AK-47 | Anubis',
-  'AK-47 | Case Hardened',
-  'AK-47 | Fire Serpent',
-  'AK-47 | Fuel Injector',
-  'AK-47 | Wild Lotus',
-  'AK-47 | Vulcan',
-  'AK-47 | Asiimov',
-  'AK-47 | Neon Revolution',
-  'AK-47 | Black Laminate',
-  'AK-47 | The Empress',
-  'AK-47 | Gold Arabesque',
-  'AK-47 | Inheritance',
-  'AK-47 | Slate',
-  'AK-47 | Head Shot',
-  // AWP (15)
-  'AWP | Asiimov',
-  'AWP | Dragon Lore',
-  'AWP | Gungnir',
-  'AWP | Hyper Beast',
-  'AWP | Neo-Noir',
-  'AWP | Medusa',
-  'AWP | Fade',
-  'AWP | Printstream',
-  'AWP | Desert Hydra',
-  'AWP | Duality',
-  'AWP | Wildfire',
-  'AWP | Chromatic Aberration',
-  'AWP | Containment Breach',
-  'AWP | Lightning Strike',
-  'AWP | Fever Dream',
-  // M4A4 (10)
-  'M4A4 | Howl',
-  'M4A4 | In Living Color',
-  'M4A4 | Spider Lily',
-  'M4A4 | The Emperor',
-  'M4A4 | Desolate Space',
-  'M4A4 | Asiimov',
-  'M4A4 | Neo-Noir',
-  'M4A4 | Buzz Kill',
-  'M4A4 | Temukau',
-  'M4A4 | Hellfire',
-  // M4A1-S (10)
-  'M4A1-S | Printstream',
-  'M4A1-S | Black Lotus',
-  'M4A1-S | Night Terror',
-  'M4A1-S | Hyper Beast',
-  'M4A1-S | Cyrex',
-  'M4A1-S | Master Piece',
-  'M4A1-S | Decimator',
-  'M4A1-S | Imminent Danger',
-  'M4A1-S | Welcome to the Jungle',
-  'M4A1-S | Emphorosaur-S',
-  // USP-S (8)
-  'USP-S | Printstream',
-  'USP-S | Kill Confirmed',
-  'USP-S | The Traitor',
-  'USP-S | Neo-Noir',
-  'USP-S | Orion',
-  'USP-S | Stainless',
-  'USP-S | Monster Mashup',
-  'USP-S | Overgrowth',
-  // Glock-18 (8)
-  'Glock-18 | Fade',
-  'Glock-18 | Vogue',
-  'Glock-18 | Water Elemental',
-  'Glock-18 | Gamma Doppler',
-  'Glock-18 | Neo-Noir',
-  'Glock-18 | Bullet Queen',
-  'Glock-18 | Wasteland Rebel',
-  'Glock-18 | Brass',
-  // Knives (15)
-  '★ M9 Bayonet | Doppler',
-  '★ M9 Bayonet | Fade',
-  '★ M9 Bayonet | Marble Fade',
-  '★ Karambit | Doppler',
-  '★ Karambit | Marble Fade',
-  '★ Butterfly Knife | Doppler',
-  '★ Butterfly Knife | Marble Fade',
-  '★ Talon Knife | Doppler',
-  '★ Talon Knife | Fade',
-  '★ Stiletto Knife | Doppler',
-  '★ Flip Knife | Doppler',
-  '★ Flip Knife | Fade',
-  '★ Shadow Daggers | Doppler',
-  '★ Kukri Knife | Doppler',
-  '★ Skeleton Knife | Stained',
-  // Gloves (12)
-  "Sport Gloves | Pandora's Box",
-  'Sport Gloves | Vice',
-  'Sport Gloves | Amphibious',
-  'Sport Gloves | Superconductor',
-  'Specialist Gloves | Crimson Kimono',
-  'Specialist Gloves | Fade',
-  'Specialist Gloves | Marble Fade',
-  'Driver Gloves | Crimson Weave',
-  'Driver Gloves | Imperial Plaid',
-  'Hand Wraps | Cobalt Skulls',
-  'Moto Gloves | Spearmint',
-  'Broken Fang Gloves | Unhinged',
-];
-
-// Skins that only come in FN (knives/gloves mostly)
-const FN_ONLY = [
-  '★ M9 Bayonet | Doppler', '★ M9 Bayonet | Fade', '★ M9 Bayonet | Marble Fade',
-  '★ Karambit | Doppler', '★ Karambit | Marble Fade',
-  '★ Butterfly Knife | Doppler', '★ Butterfly Knife | Marble Fade',
-  '★ Talon Knife | Doppler', '★ Talon Knife | Fade',
-  '★ Stiletto Knife | Doppler', '★ Flip Knife | Doppler', '★ Flip Knife | Fade',
-  '★ Shadow Daggers | Doppler', '★ Kukri Knife | Doppler', '★ Skeleton Knife | Stained',
-  'AWP | Dragon Lore', 'AWP | Gungnir', 'AWP | Lightning Strike',
-  'AK-47 | Wild Lotus', 'AK-47 | Gold Arabesque', 'M4A4 | Howl',
-];
-
-// Gloves only come in FT/WW/BS
-const GLOVE_BASES = [
-  "Sport Gloves | Pandora's Box", 'Sport Gloves | Vice', 'Sport Gloves | Amphibious',
-  'Sport Gloves | Superconductor', 'Specialist Gloves | Crimson Kimono',
-  'Specialist Gloves | Fade', 'Specialist Gloves | Marble Fade',
-  'Driver Gloves | Crimson Weave', 'Driver Gloves | Imperial Plaid',
-  'Hand Wraps | Cobalt Skulls', 'Moto Gloves | Spearmint', 'Broken Fang Gloves | Unhinged',
-];
-
-const GLOVE_WEARS = ['Field-Tested', 'Well-Worn', 'Battle-Scarred'];
-
-// No StatTrak for gloves or some special skins
-const NO_STATTRAK = [
-  ...GLOVE_BASES,
-  'AWP | Dragon Lore', 'AWP | Gungnir', 'AWP | Medusa',
-  'AK-47 | Wild Lotus', 'AK-47 | Gold Arabesque', 'AK-47 | Fire Serpent',
-  'M4A4 | Howl',
-];
-
-const KNIFE_WORDS = ['knife','karambit','butterfly','bayonet','falchion','flip','gut','huntsman','m9','navaja','shadow daggers','stiletto','talon','ursus','paracord','nomad','survival','skeleton','classic knife','kukri'];
-const GLOVE_WORDS = ['gloves','hand wraps','wraps'];
-
-function isKnife(n)  { return KNIFE_WORDS.some(k => n.toLowerCase().includes(k)); }
-function isGloves(n) { return GLOVE_WORDS.some(k => n.toLowerCase().includes(k)); }
-
-function getWearsForSkin(base) {
-  if (GLOVE_BASES.includes(base)) return GLOVE_WEARS;
-  if (FN_ONLY.includes(base)) return ['Factory New'];
-  return WEARS;
-}
-
-function hasStatTrak(base) {
-  return !NO_STATTRAK.includes(base) && !isGloves(base);
-}
-
 async function getFXRate() {
   try {
     const res  = await fetch(FX_API);
     const data = await res.json();
     return data.rates.ZAR;
   } catch(e) {
-    console.error('[FX] Failed, using fallback 19.0');
+    console.error('[FX] Failed, using fallback');
     return 19.0;
   }
 }
 
-async function fetchPrice(marketHashName) {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const url = `https://steamcommunity.com/market/priceoverview/?appid=730&currency=1&market_hash_name=${encodeURIComponent(marketHashName)}`;
-      const res  = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-      if (!res.ok) { await new Promise(r => setTimeout(r, 8000)); continue; }
-      const data = await res.json();
-      if (!data.success) { await new Promise(r => setTimeout(r, 8000)); continue; }
-      const raw = data.lowest_price || data.median_price;
-      if (!raw) { await new Promise(r => setTimeout(r, 8000)); continue; }
-      return parseFloat(raw.replace(/[^0-9.]/g, ''));
-    } catch(e) {
-      await new Promise(r => setTimeout(r, 8000));
-    }
-  }
-  return null;
+async function fetchAllItems() {
+  console.log('[API] Fetching full CS2 catalog from steamwebapi.com...');
+  const url = `https://www.steamwebapi.com/steam/api/items?key=${SWAPI_KEY}&game=cs2&production=1`;
+  const res  = await fetch(url, { headers: { 'User-Agent': 'KASTLR/1.0' } });
+  if (!res.ok) throw new Error(`API failed: ${res.status}`);
+  const data = await res.json();
+  console.log(`[API] Received ${data.length} items`);
+  return data;
 }
 
-function buildPostText(movers, zarRate) {
-  if (!movers.length) return null;
-  const top   = movers[0];
-  const sign  = top.changePct > 0 ? '↑' : '↓';
-  const emoji = top.changePct > 0 ? '🟢' : '🔴';
-  const price = Math.round(top.priceUSD * zarRate).toLocaleString('en-ZA');
-  const prev  = Math.round(top.prevPriceUSD * zarRate).toLocaleString('en-ZA');
-  const pct   = Math.abs(top.changePct).toFixed(1);
+async function main() {
+  console.log('[KASTLR] Full market pull starting at', new Date().toISOString());
 
-  const text = `${emoji} CS2 ZA — ${top.name}\n${sign} ${pct}% · R${price} (was R${prev})\n\nkastlr.com/prices`;
+  // FX rate
+  const zarRate = await getFXRate();
+  console.log('[FX] USD/ZAR:', zarRate);
+  await supabase.from('fx_rates').insert({ rate: zarRate, timestamp: new Date() });
 
-  return text.length <= 260 ? text : text.substring(0, 257) + '...';
+  // Fetch previous prices for change calculation
+  const { data: prevData } = await supabase
+    .from('cs2_prices')
+    .select('market_hash_name, price_steam, price_real');
+  const prevMap = {};
+  (prevData || []).forEach(p => {
+    prevMap[p.market_hash_name] = {
+      steam: p.price_steam,
+      real:  p.price_real
+    };
+  });
+  console.log(`[Prev] Loaded ${Object.keys(prevMap).length} previous prices`);
+
+  // Fetch all items
+  const items = await fetchAllItems();
+
+  // Build upsert rows
+  const rows = [];
+  for (const item of items) {
+    const prev         = prevMap[item.markethashname] || {};
+    const priceSteam   = item.pricelatest   || item.pricemedian || null;
+    const priceReal    = item.pricereal     || null;
+    const priceMix     = item.pricemix      || priceReal || priceSteam || null;
+
+    const changeSteam  = prev.steam && priceSteam
+      ? ((priceSteam - prev.steam) / prev.steam) * 100
+      : 0;
+    const changeReal   = prev.real && priceReal
+      ? ((priceReal - prev.real) / prev.real) * 100
+      : 0;
+
+    rows.push({
+      market_hash_name:  item.markethashname,
+      normalized_name:   item.normalizedname,
+      slug:              item.slug,
+      item_group:        item.itemgroup,
+      item_type:         item.itemtype,
+      item_name:         item.itemname,
+      wear:              item.wear,
+      is_stattrak:       item.isstattrak   || false,
+      is_souvenir:       item.issouvenir   || false,
+      is_star:           item.isstar       || false,
+      rarity:            item.rarity,
+      rarity_color:      item.color,
+      image_url:         item.image,
+      price_steam:       priceSteam,
+      price_steam_median: item.pricemedian || null,
+      price_real:        priceReal,
+      price_real_median: item.pricerealmedian || null,
+      price_mix:         priceMix,
+      zar_steam:         priceSteam ? Math.round(priceSteam * zarRate) : null,
+      zar_real:          priceReal  ? Math.round(priceReal  * zarRate) : null,
+      zar_mix:           priceMix   ? Math.round(priceMix   * zarRate) : null,
+      prev_steam:        prev.steam  || null,
+      prev_real:         prev.real   || null,
+      change_pct_steam:  parseFloat(changeSteam.toFixed(2)),
+      change_pct_real:   parseFloat(changeReal.toFixed(2)),
+      sold_24h:          item.sold24h    || 0,
+      sold_7d:           item.sold7d     || 0,
+      sold_30d:          item.sold30d    || 0,
+      buy_order:         item.buyorderprice || null,
+      offer_volume:      item.offervolume   || 0,
+      steam_url:         item.steamurl,
+      updated_at:        new Date(),
+    });
+  }
+
+  // Upsert in batches of 500
+  const BATCH = 500;
+  let upserted = 0;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const batch = rows.slice(i, i + BATCH);
+    const { error } = await supabase
+      .from('cs2_prices')
+      .upsert(batch, { onConflict: 'market_hash_name' });
+    if (error) console.error('[Supabase] Upsert error:', error.message);
+    else upserted += batch.length;
+    console.log(`[Upsert] ${upserted}/${rows.length}`);
+  }
+  console.log(`[Prices] Done — ${upserted} items stored`);
+
+  // Social post — top movers
+  const movers = rows
+    .filter(r => r.price_real && Math.abs(r.change_pct_real) >= 5)
+    .sort((a,b) => Math.abs(b.change_pct_real) - Math.abs(a.change_pct_real))
+    .slice(0, 1);
+
+  if (movers.length) {
+    const top  = movers[0];
+    const sign = top.change_pct_real > 0 ? '↑' : '↓';
+    const emoji = top.change_pct_real > 0 ? '🟢' : '🔴';
+    const text = `${emoji} CS2 ZA — ${top.market_hash_name}\n${sign} ${Math.abs(top.change_pct_real).toFixed(1)}% · R${top.zar_real?.toLocaleString('en-ZA')} (was R${Math.round((top.prev_real||0) * zarRate).toLocaleString('en-ZA')})\n\nkastlr.com/prices`;
+    if (text.length <= 260) {
+      await supabase.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'cron' });
+      console.log('[Social] Post queued');
+    }
+  }
+
+  // Alerts
+  await checkAndSendAlerts(zarRate);
+
+  // Leaderboard
+  await fetchLeaderboard();
+
+  console.log('[KASTLR] Full market pull complete at', new Date().toISOString());
 }
 
 async function checkAndSendAlerts(zarRate) {
-  if (!RESEND_KEY) { console.log('[Alerts] No Resend key, skipping.'); return; }
+  if (!RESEND_KEY) return;
   const { data: alerts } = await supabase.from('watchlist').select('*').eq('alert_sent', false).eq('confirmed', true);
-  if (!alerts || !alerts.length) { console.log('[Alerts] No pending alerts.'); return; }
+  if (!alerts?.length) return;
   for (const alert of alerts) {
-    const { data: priceRow } = await supabase.from('skin_prices').select('zar_price').eq('skin_name', alert.skin_name).order('timestamp', { ascending: false }).limit(1).single();
+    const { data: priceRow } = await supabase
+      .from('cs2_prices')
+      .select('zar_real, zar_steam')
+      .eq('market_hash_name', alert.skin_name)
+      .single();
     if (!priceRow) continue;
-    const currentZAR = priceRow.zar_price;
-    const triggered  = alert.direction === 'below' ? currentZAR <= alert.target_zar : currentZAR >= alert.target_zar;
+    const currentZAR = priceRow.zar_real || priceRow.zar_steam;
+    if (!currentZAR) continue;
+    const triggered = alert.direction === 'below' ? currentZAR <= alert.target_zar : currentZAR >= alert.target_zar;
     if (!triggered) continue;
     try {
       await fetch('https://api.resend.com/emails', {
@@ -235,10 +181,8 @@ async function checkAndSendAlerts(zarRate) {
         })
       });
       await supabase.from('watchlist').update({ alert_sent: true, alert_sent_at: new Date() }).eq('id', alert.id);
-      console.log(`[Alerts] Sent to ${alert.email} for ${alert.skin_name}`);
-    } catch(e) {
-      console.error('[Alerts] Email failed:', e.message);
-    }
+      console.log(`[Alerts] Sent to ${alert.email}`);
+    } catch(e) { console.error('[Alerts] Failed:', e.message); }
   }
 }
 
@@ -247,105 +191,18 @@ async function fetchLeaderboard() {
     const res = await fetch('https://explodingcamera.github.io/cs2leaderboard/data/latest/africa.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (!data || !data.length) throw new Error('No data');
-    await supabase.from('leaderboard').delete().eq('snapshot_date', new Date().toISOString().split('T')[0]);
+    if (!data?.length) throw new Error('No data');
+    const today = new Date().toISOString().split('T')[0];
+    await supabase.from('leaderboard').delete().eq('snapshot_date', today);
     const inserts = data.slice(0, 1000).map(p => ({
       player_name: p.name, cs_rating: p.rating, rank: p.rank,
       wins: p.matches_won || 0, losses: p.matches_lost || 0,
-      map_stats: p.map_stats || {}, snapshot_date: new Date().toISOString().split('T')[0], region: 'africa',
+      map_stats: p.map_stats || {}, snapshot_date: today, region: 'africa',
     }));
     const { error } = await supabase.from('leaderboard').insert(inserts);
     if (error) throw error;
-    console.log(`[Leaderboard] Stored ${inserts.length} players`);
-  } catch(e) {
-    console.error('[Leaderboard] Failed:', e.message);
-  }
-}
-
-async function main() {
-  console.log('[PriceFetch] Starting run at', new Date().toISOString());
-
-  // FX rate
-  const zarRate = await getFXRate();
-  console.log('[FX] USD/ZAR:', zarRate);
-  await supabase.from('fx_rates').insert({ rate: zarRate, timestamp: new Date() });
-
-  // Get previous prices for change calculation
-  const { data: prevPrices } = await supabase.from('skin_prices').select('skin_name, usd_price').order('timestamp', { ascending: false }).limit(50000);
-  const prevMap = {};
-  (prevPrices || []).forEach(p => { if (!prevMap[p.skin_name]) prevMap[p.skin_name] = p.usd_price; });
-
-  const inserts = [];
-  const movers  = [];
-  let fetched   = 0;
-
-  for (const base of BASE_SKINS) {
-    const wears = getWearsForSkin(base);
-    const types = hasStatTrak(base) ? [false, true] : [false];
-
-    for (const st of types) {
-      for (const wear of wears) {
-        const prefix    = st ? 'StatTrak™ ' : '';
-        const fullName  = `${prefix}${base} (${wear})`;
-        const knife     = isKnife(base);
-        const gloves    = isGloves(base);
-
-        const priceUSD = await fetchPrice(fullName);
-        await new Promise(r => setTimeout(r, 4000));
-
-        if (!priceUSD || priceUSD < 1) {
-          console.log(`[Skip] ${fullName}`);
-          continue;
-        }
-
-        const prevPrice = prevMap[fullName];
-        const changePct = prevPrice ? ((priceUSD - prevPrice) / prevPrice) * 100 : 0;
-
-        inserts.push({
-          skin_name:  fullName,
-          usd_price:  priceUSD,
-          zar_price:  Math.round(priceUSD * zarRate),
-          rarity:     knife ? 'covert' : gloves ? 'extraordinary' : 'unknown',
-          category:   knife ? 'knife' : gloves ? 'gloves' : 'weapon',
-          change_pct: changePct,
-          timestamp:  new Date(),
-        });
-
-        fetched++;
-        console.log(`[${fetched}] ${fullName}: $${priceUSD} = R${Math.round(priceUSD * zarRate)}`);
-
-        if (prevPrice && Math.abs(changePct) >= 5) {
-          movers.push({
-            name: fullName, priceUSD, prevPriceUSD: prevPrice, changePct,
-            priority: (knife || gloves ? 100 : 0) + Math.abs(changePct) + (priceUSD / 10),
-          });
-        }
-      }
-    }
-  }
-
-  // Batch insert
-  const BATCH = 500;
-  for (let i = 0; i < inserts.length; i += BATCH) {
-    const { error } = await supabase.from('skin_prices').insert(inserts.slice(i, i + BATCH));
-    if (error) console.error('[Supabase] Insert error:', error.message);
-  }
-  console.log(`[Prices] Stored ${inserts.length} entries`);
-
-  // Queue social post
-  movers.sort((a, b) => b.priority - a.priority);
-  if (movers.length > 0) {
-    const postText = buildPostText(movers, zarRate);
-    if (postText) {
-      await supabase.from('social_posts').insert({ post_text: postText, status: 'queued', trigger: 'cron' });
-      console.log('[Social] Post queued');
-    }
-  }
-
-  await checkAndSendAlerts(zarRate);
-  await fetchLeaderboard();
-
-  console.log('[PriceFetch] Done at', new Date().toISOString());
+    console.log(`[Leaderboard] ${inserts.length} players stored`);
+  } catch(e) { console.error('[Leaderboard] Failed:', e.message); }
 }
 
 main().catch(e => {
