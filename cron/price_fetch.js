@@ -195,7 +195,6 @@ async function fetchPrice(marketHashName) {
   }
   return null;
 }
-}
 
 function buildPostText(movers, zarRate) {
   if (!movers.length) return null;
