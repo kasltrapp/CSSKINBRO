@@ -111,7 +111,8 @@ async function main() {
       buy_order:         item.buyorderprice || null,
       offer_volume:      item.offervolume   || 0,
       steam_url:         item.steamurl,
-      updated_at:        new Date(),
+	  variants:          item.variants || null,
+	  updated_at:        new Date(),
     });
   }
 
