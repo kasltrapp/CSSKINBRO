@@ -199,24 +199,13 @@ function buildPostText(movers, zarRate) {
   const top   = movers[0];
   const sign  = top.changePct > 0 ? '↑' : '↓';
   const emoji = top.changePct > 0 ? '🟢' : '🔴';
-  const lines = [
-    `${emoji} CS2 SKIN ALERT — ZA`,
-    ``,
-    `${top.name}`,
-    `${sign} ${Math.abs(top.changePct).toFixed(1)}% — now R${Math.round(top.priceUSD * zarRate).toLocaleString('en-ZA')}`,
-    `(was R${Math.round(top.prevPriceUSD * zarRate).toLocaleString('en-ZA')})`,
-    ``,
-  ];
-  if (movers.length > 1) {
-    lines.push('Also moving:');
-    movers.slice(1, 4).forEach(m => {
-      const s = m.changePct > 0 ? '↑' : '↓';
-      lines.push(`${m.name} ${s} ${Math.abs(m.changePct).toFixed(1)}% — R${Math.round(m.priceUSD * zarRate).toLocaleString('en-ZA')}`);
-    });
-    lines.push('');
-  }
-  lines.push('Full ZAR prices → kastlr.com/prices');
-  return lines.join('\n');
+  const price = Math.round(top.priceUSD * zarRate).toLocaleString('en-ZA');
+  const prev  = Math.round(top.prevPriceUSD * zarRate).toLocaleString('en-ZA');
+  const pct   = Math.abs(top.changePct).toFixed(1);
+
+  const text = `${emoji} CS2 ZA — ${top.name}\n${sign} ${pct}% · R${price} (was R${prev})\n\nkastlr.com/prices`;
+
+  return text.length <= 260 ? text : text.substring(0, 257) + '...';
 }
 
 async function checkAndSendAlerts(zarRate) {
