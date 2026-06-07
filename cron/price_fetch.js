@@ -49,9 +49,20 @@ async function main() {
   await supabase.from('fx_rates').insert({ rate: zarRate, timestamp: new Date() });
 
   // Fetch previous prices for change calculation
-  const { data: prevData } = await supabase
+  // Paginate prev prices — Supabase caps at 1000 per call
+let prevData = [];
+let prevFrom = 0;
+while (true) {
+  const { data: batch } = await supabase
     .from('cs2_prices')
-    .select('market_hash_name, price_steam, price_real');
+    .select('market_hash_name, price_steam, price_real')
+    .range(prevFrom, prevFrom + 999);
+  if (!batch?.length) break;
+  prevData.push(...batch);
+  if (batch.length < 1000) break;
+  prevFrom += 1000;
+}
+console.log(`[Prev] Loaded ${prevData.length} previous prices`);
   const prevMap = {};
   (prevData || []).forEach(p => {
     prevMap[p.market_hash_name] = {
