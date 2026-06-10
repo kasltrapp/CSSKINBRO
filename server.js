@@ -84,7 +84,7 @@ function scheduleCron() {
 
   setTimeout(() => {
     console.log('[Cron] Firing price fetch at', new Date().toISOString());
-    const child = spawn('node', [join(__dirname, 'cron/price_fetch_v6.js')], {
+    const child = spawn('node', [join(__dirname, 'cron/price_fetch.js')], {
       stdio: 'inherit',
       env: process.env,
     });
