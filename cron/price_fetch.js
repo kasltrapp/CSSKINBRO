@@ -148,14 +148,15 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
     .slice(0, 1);
 
   if (movers.length) {
-    const top  = movers[0];
-    const sign = top.change_pct_real > 0 ? '↑' : '↓';
+    const top   = movers[0];
+    const sign  = top.change_pct_real > 0 ? '↑' : '↓';
     const emoji = top.change_pct_real > 0 ? '🟢' : '🔴';
-    const text = `${emoji} CS2 ZA — ${top.market_hash_name}\n${sign} ${Math.abs(top.change_pct_real).toFixed(1)}% · R${top.zar_real?.toLocaleString('en-ZA')} (was R${Math.round((top.prev_real||0) * zarRate).toLocaleString('en-ZA')})\n\nkastlr.com/prices`;
-    if (text.length <= 260) {
-      await supabase.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'cron' });
-      console.log('[Social] Post queued');
-    }
+    const shortName = top.market_hash_name.length > 60
+      ? top.market_hash_name.substring(0, 57) + '...'
+      : top.market_hash_name;
+    const text = `${emoji} CS2 ZA — ${shortName}\n${sign} ${Math.abs(top.change_pct_real).toFixed(1)}% · R${top.zar_real?.toLocaleString('en-ZA')} (was R${Math.round((top.prev_real||0) * zarRate).toLocaleString('en-ZA')})\n\nkastlr.com/prices`;
+    await supabase.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'cron' });
+    console.log('[Social] Post queued:', text.length, 'chars');
   }
 
   // Alerts
