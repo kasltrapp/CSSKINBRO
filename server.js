@@ -7,6 +7,7 @@ import fetch from 'node-fetch';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import './bot.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
