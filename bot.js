@@ -1,12 +1,13 @@
 /* ============================================================
    KASTLR Discord Bot — bot.js
-   Version 1.0 — June 2026
+   Version 1.1 — June 2026
    Commands: !price <skin name>
    Allowed channels: deal-check, general
    ============================================================ */
 
 import https from 'https';
 import { WebSocket } from 'ws';
+import fetch from 'node-fetch';
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const SB_URL    = 'https://ikzlzrkuxndxzzfhwurb.supabase.co';
@@ -15,6 +16,7 @@ const SB_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 const ALLOWED_CHANNELS = ['deal-check', 'general'];
 const DISCORD_API = 'https://discord.com/api/v10';
 
+/* ── Discord API requests via https ── */
 function request(method, path, body, token) {
   return new Promise((resolve, reject) => {
     const url = new URL(DISCORD_API + path);
@@ -39,38 +41,29 @@ function request(method, path, body, token) {
   });
 }
 
-function sbFetch(path) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(SB_URL + path);
-    const opts = {
-      hostname: url.hostname,
-      path: url.pathname + url.search,
-      method: 'GET',
-      headers: { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON }
-    };
-    const req = https.request(opts, res => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve([]); } });
-    });
-    req.on('error', reject);
-    req.end();
-  });
-}
-
-function zar(n) { return n ? 'R' + Math.round(n).toLocaleString('en-ZA') : '—'; }
-
+/* ── Supabase query via node-fetch ── */
 async function lookupPrice(query) {
-  const safe = query.split(' ').join('%25');
-  const path = `/rest/v1/cs2_prices?market_hash_name=ilike.%25${safe}%25&zar_real=gt.0&order=sold_7d.desc.nullslast&limit=5&select=market_hash_name,item_group,wear,is_stattrak,is_souvenir,zar_real,zar_steam,change_pct_real,sold_7d`;
-  const data = await sbFetch(path);
+  const url = `${SB_URL}/rest/v1/cs2_prices?market_hash_name=ilike.*${query}*&zar_real=gt.0&order=sold_7d.desc.nullslast&limit=5&select=market_hash_name,item_group,wear,is_stattrak,is_souvenir,zar_real,zar_steam,change_pct_real,sold_7d`;
+  console.log('[Bot] Querying:', url);
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SB_ANON,
+      'Authorization': 'Bearer ' + SB_ANON
+    }
+  });
+  const data = await res.json();
+  console.log('[Bot] Results:', JSON.stringify(data).substring(0, 200));
   return Array.isArray(data) ? data : [];
 }
 
+/* ── Format ZAR ── */
+function zar(n) { return n ? 'R' + Math.round(n).toLocaleString('en-ZA') : '—'; }
+
+/* ── Build Discord embed ── */
 function buildEmbed(results, query) {
   const WEAR = { fn:'FN', mw:'MW', ft:'FT', ww:'WW', bs:'BS' };
   if (!results.length) {
-    return { embeds: [{ color: 0xFF3333, title: '❌ No Results', description: `No CS2 skin found matching **${query}**\n\nTry: \`!price AK-47 Redline FT\``, footer: { text: 'KASTLR · kastlr.com' } }] };
+    return { embeds: [{ color: 0xFF3333, title: '❌ No Results', description: `No CS2 skin found matching **${query}**\n\nTry: \`!price AK-47 | Redline\``, footer: { text: 'KASTLR · kastlr.com' } }] };
   }
   const fields = results.map(item => {
     const type = item.is_stattrak ? '🟡 ST™' : item.is_souvenir ? '🔵 SV' : '⚪ Normal';
@@ -87,6 +80,7 @@ function buildEmbed(results, query) {
   return { embeds: [{ color: 0xFF6B00, title: `🔍 Price Results for "${query}"`, fields, footer: { text: 'KASTLR · Real market prices in ZAR · kastlr.com' }, timestamp: new Date().toISOString() }] };
 }
 
+/* ── Gateway ── */
 let ws, heartbeatInterval, sessionId, sequence = null, resumeUrl = null;
 
 function connect() {
@@ -119,6 +113,7 @@ function reconnect() {
   } else { connect(); }
 }
 
+/* ── Message handler ── */
 async function handleMessage(msg) {
   if (msg.author?.bot) return;
   const content = (msg.content || '').trim();
@@ -126,11 +121,12 @@ async function handleMessage(msg) {
   try {
     const channel = await request('GET', `/channels/${msg.channel_id}`, null, BOT_TOKEN);
     const name = (channel.name || '').toLowerCase();
+    console.log('[Bot] Channel name:', name);
     if (!ALLOWED_CHANNELS.some(c => name.includes(c))) return;
-  } catch(e) { return; }
+  } catch(e) { console.error('[Bot] Channel check error:', e.message); return; }
   const query = content.slice(6).trim();
   if (!query) {
-    await request('POST', `/channels/${msg.channel_id}/messages`, { content: '**Usage:** `!price <skin name>`\nExample: `!price AK-47 Redline FT`' }, BOT_TOKEN);
+    await request('POST', `/channels/${msg.channel_id}/messages`, { content: '**Usage:** `!price <skin name>`\nExample: `!price AK-47 | Redline`' }, BOT_TOKEN);
     return;
   }
   await request('POST', `/channels/${msg.channel_id}/typing`, {}, BOT_TOKEN);
@@ -143,6 +139,7 @@ async function handleMessage(msg) {
   }
 }
 
+/* ── Start ── */
 if (!BOT_TOKEN) {
   console.error('[Bot] DISCORD_BOT_TOKEN not set — bot will not start');
 } else {
