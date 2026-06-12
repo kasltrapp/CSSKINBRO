@@ -141,6 +141,29 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
   }
   console.log(`[Prices] Done — ${upserted} items stored`);
 
+// Daily price history snapshot
+  const today = new Date().toISOString().split('T')[0];
+  const historyRows = rows
+    .filter(r => r.zar_real && r.zar_real > 0)
+    .map(r => ({
+      market_hash_name: r.market_hash_name,
+      zar_real:         r.zar_real,
+      zar_steam:        r.zar_steam,
+      zar_mix:          r.zar_mix,
+      change_pct_real:  r.change_pct_real,
+      sold_7d:          r.sold_7d,
+      snapshot_date:    today
+    }));
+  // Insert in batches of 500
+  let historyInserted = 0;
+  for (let i = 0; i < historyRows.length; i += 500) {
+    const batch = historyRows.slice(i, i + 500);
+    const { error } = await supabase.from('cs2_price_history').insert(batch);
+    if (error) console.error('[History] Insert error:', error.message);
+    else historyInserted += batch.length;
+  }
+  console.log(`[History] ${historyInserted} rows snapshotted for ${today}`);
+	
   // Social post — top movers
   const movers = rows
     .filter(r => r.price_real && Math.abs(r.change_pct_real) >= 5)
