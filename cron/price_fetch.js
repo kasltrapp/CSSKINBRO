@@ -181,6 +181,11 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
     await supabase.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'cron' });
     console.log('[Social] Post queued:', text.length, 'chars');
 
+	// Market digest post
+  const digestText = `📊 CS2 ZA Market Digest updated\n\nTop movers, buy low watch & category breakdown — all in ZAR\n\nkastlr.com/market\n@kastlrcsgo`;
+  await supabase.from('social_posts').insert({ post_text: digestText, status: 'queued', trigger: 'cron' });
+  console.log('[Social] Market digest post queued');
+	  
     // Discord webhook
     try {
       await fetch('https://discord.com/api/webhooks/1514811034496405525/7EINubJikI0wPPcA5Xd0-QqSZU-VT93NyWGKNycq88tD-aK5-I55Kjrhz407HCIgWhGo', {
