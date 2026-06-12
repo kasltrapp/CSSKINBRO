@@ -157,6 +157,19 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
     const text = `${emoji} CS2 ZA — ${shortName}\n${sign} ${Math.abs(top.change_pct_real).toFixed(1)}% · R${top.zar_real?.toLocaleString('en-ZA')} (was R${Math.round((top.prev_real||0) * zarRate).toLocaleString('en-ZA')})\n\nkastlr.com/prices`;
     await supabase.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'cron' });
     console.log('[Social] Post queued:', text.length, 'chars');
+
+    // Discord webhook
+    try {
+      await fetch('https://discord.com/api/webhooks/1514811034496405525/7EINubJikI0wPPcA5Xd0-QqSZU-VT93NyWGKNycq88tD-aK5-I55Kjrhz407HCIgWhGo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: 'KASTLR Price Bot',
+          content: text
+        })
+      });
+      console.log('[Discord] Post sent');
+    } catch(e) { console.error('[Discord] Failed:', e.message); }
   }
 
   // Alerts
