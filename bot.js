@@ -61,7 +61,8 @@ function sbFetch(path) {
 function zar(n) { return n ? 'R' + Math.round(n).toLocaleString('en-ZA') : '—'; }
 
 async function lookupPrice(query) {
-  const path = `/rest/v1/cs2_prices?market_hash_name=ilike.*${query}*&zar_real=gt.0&order=sold_7d.desc.nullslast&limit=5&select=market_hash_name,item_group,wear,is_stattrak,is_souvenir,zar_real,zar_steam,change_pct_real,sold_7d`;
+  const safe = query.replace(/\s+/g, '%20');
+  const path = `/rest/v1/cs2_prices?market_hash_name=ilike.*${safe}*&zar_real=gt.0&order=sold_7d.desc.nullslast&limit=5&select=market_hash_name,item_group,wear,is_stattrak,is_souvenir,zar_real,zar_steam,change_pct_real,sold_7d`;
   const data = await sbFetch(path);
   return Array.isArray(data) ? data : [];
 }
