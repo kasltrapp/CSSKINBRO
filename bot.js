@@ -74,7 +74,7 @@ function buildEmbed(results, query) {
     const vol = item.sold_7d ? ` · ${item.sold_7d} sold/7d` : '';
     return {
       name: item.market_hash_name.replace(/\([^)]+\)/,'').trim(),
-      value: `${type}${wear}\n**${zar(item.zar_real)}** real market${item.zar_steam ? ` · Steam ${zar(item.zar_steam)}` : ''}${pctStr}${vol}`,
+      value: `${type}${wear}\n**${zar(item.zar_real)}** Consolidated market${item.zar_steam ? ` · Steam ${zar(item.zar_steam)}` : ''}${pctStr}${vol}`,
       inline: false
     };
   });
