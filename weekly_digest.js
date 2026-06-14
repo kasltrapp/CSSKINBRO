@@ -6,7 +6,7 @@
      scheduleWeeklyDigest();
    ============================================================ */
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const SB_URL  = process.env.SUPABASE_URL;
 const SB_KEY  = process.env.SUPABASE_SERVICE_KEY;
@@ -350,4 +350,4 @@ function scheduleWeeklyDigest() {
   scheduleNext();
 }
 
-module.exports = { scheduleWeeklyDigest, sendWeeklyDigest };
+export { scheduleWeeklyDigest, sendWeeklyDigest };
