@@ -13,6 +13,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 const INVENTORY_SECRET = process.env.INVENTORY_SECRET;
+const { scheduleWeeklyDigest } = require('./weekly_digest.js');
+scheduleWeeklyDigest();
 
 // ── Inventory Proxy Endpoint ──────────────────────────────────────
 app.get('/inventory/:steamId', async (req, res) => {
