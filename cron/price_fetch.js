@@ -165,10 +165,20 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
   console.log(`[History] ${historyInserted} rows snapshotted for ${today}`);
 	
   // Social post — top movers
-  const movers = rows
-    .filter(r => r.price_real && Math.abs(r.change_pct_real) >= 5)
-    .sort((a,b) => Math.abs(b.change_pct_real) - Math.abs(a.change_pct_real))
-    .slice(0, 1);
+  const WEAPON_GROUPS = ['rifle','sniper rifle','pistol','smg','shotgun','machinegun','knife','gloves'];
+
+const movers = rows
+  .filter(r => 
+    r.price_real &&
+    r.zar_real >= 50 &&
+    r.sold_7d >= 10 &&
+    r.is_souvenir === false &&
+    WEAPON_GROUPS.includes(r.item_group) &&
+    Math.abs(r.change_pct_real) >= 5 &&
+    Math.abs(r.change_pct_real) <= 200
+  )
+  .sort((a,b) => Math.abs(b.change_pct_real) - Math.abs(a.change_pct_real))
+  .slice(0, 1);
 
   if (movers.length) {
     const top   = movers[0];
