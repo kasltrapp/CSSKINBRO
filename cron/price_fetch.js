@@ -210,6 +210,14 @@ const movers = rows
     } catch(e) { console.error('[Discord] Failed:', e.message); }
   }
 
+  // Refresh materialized view
+  try {
+    await supabase.rpc('refresh_materialized_view');
+    console.log('[Cron] Materialized view refreshed');
+  } catch(e) { console.error('[Cron] View refresh failed:', e.message); }
+
+}
+
   // Alerts
   await checkAndSendAlerts(zarRate);
 
@@ -272,6 +280,4 @@ async function fetchLeaderboard() {
 main().catch(e => {
   console.error('[FATAL]', e);
   process.exit(0);
-	// Refresh materialized view
-await supabase.rpc('refresh_materialized_view');
 });
