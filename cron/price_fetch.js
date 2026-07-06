@@ -213,6 +213,7 @@ const movers = rows
   // Refresh materialized view
   try {
     await supabase.rpc('refresh_materialized_view');
+	await supabase.rpc('refresh_kastlr_trends');
     console.log('[Cron] Materialized view refreshed');
   } catch(e) { console.error('[Cron] View refresh failed:', e.message); }
 
