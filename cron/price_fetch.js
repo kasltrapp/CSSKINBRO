@@ -272,4 +272,6 @@ async function fetchLeaderboard() {
 main().catch(e => {
   console.error('[FATAL]', e);
   process.exit(0);
+	// Refresh materialized view
+await supabase.rpc('refresh_materialized_view');
 });
