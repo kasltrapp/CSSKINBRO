@@ -11,6 +11,7 @@
     "node-fetch": "^3.3.2",
     "resend": "^2.0.0",
     "ws": "^8.18.0"
+    "googleapis": "^173.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
