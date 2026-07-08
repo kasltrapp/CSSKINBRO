@@ -139,7 +139,7 @@ async function fetchBuffEnrichedItems() {
   const data = await res.json();
   console.log(`[Buff163] Received ${data.length} items`);
   // Debug line — uncomment on first run to confirm real field names:
-  // if (data[0]) console.log('[Buff163] Sample item:', JSON.stringify(data[0], null, 2));
+  if (data[0]) console.log('[Buff163] Sample item:', JSON.stringify(data[0], null, 2));
   return data;
 }
 
