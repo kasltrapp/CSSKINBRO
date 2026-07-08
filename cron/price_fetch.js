@@ -221,8 +221,6 @@ const movers = rows
     console.log('[Cron] Materialized view refreshed');
   } catch(e) { console.error('[Cron] View refresh failed:', e.message); }
 
-}
-
 // Market Pro — total index, Buff163 movers, Sheets + email delivery
   const { index, movers } = await runMarketProSnapshot(supabase, rows, zarRate);
 
