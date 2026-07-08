@@ -81,7 +81,7 @@ export function buildDailyEmailHtml({ today, index, movers, budgetCandidateCount
         <div style="font-family:'DM Mono',Consolas,monospace;font-size:10px;letter-spacing:2px;color:#777;margin-bottom:6px">BUDGET FILTER</div>
         <div style="font-family:'DM Mono',Consolas,monospace;font-size:12px;color:#00C97A">${budgetCandidateCount} candidates fit a $${budget.toLocaleString()} budget today</div>
         <div style="margin-top:10px">
-          <a href="https://kastlr.com/market-pro" style="display:inline-block;background:#FF6B00;color:#000;font-family:'DM Mono',Consolas,monospace;font-size:11px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:10px 18px;border-radius:4px">OPEN MARKET PRO &rarr;</a>
+          <a href="https://kastlr.com/market-pro/market-pro.html" style="display:inline-block;background:#FF6B00;color:#000;font-family:'DM Mono',Consolas,monospace;font-size:11px;font-weight:bold;letter-spacing:1px;text-decoration:none;padding:10px 18px;border-radius:4px">OPEN MARKET PRO &rarr;</a>
         </div>
       </div>
 
