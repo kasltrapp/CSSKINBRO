@@ -1,27 +1,22 @@
-// cron/price_fetch_v6.js
+// cron/price_fetch.js
 // KASTLR CS2 Full Market Index
 // Uses steamwebapi.com Item+ — pulls entire CS2 catalog once daily
 // Upserts into cs2_prices — no accumulation, stays in free Supabase tier
-
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
 import ws from 'ws';
 import { runMarketProSnapshot, pricempireUrl } from './market_pro_snapshot.js';
 import { appendDailySnapshotToSheets } from './market_pro_sheets.js';
 import { sendDailyMarketProEmail } from './market_pro_email.js';
-
 const SUPABASE_URL    = process.env.SUPABASE_URL;
 const SUPABASE_KEY    = process.env.SUPABASE_SERVICE_KEY;
 const SWAPI_KEY       = process.env.STEAMWEBAPI_KEY;   // new env var
 const RESEND_KEY      = process.env.RESEND_API_KEY;
 const FROM_EMAIL      = process.env.RESEND_FROM_EMAIL || 'alerts@kastlr.com';
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   realtime: { transport: ws }
 });
-
 const FX_API = 'https://open.er-api.com/v6/latest/USD';
-
 async function getFXRate() {
   try {
     const res  = await fetch(FX_API);
@@ -32,7 +27,6 @@ async function getFXRate() {
     return 19.0;
   }
 }
-
 async function fetchAllItems() {
   console.log('[API] Fetching full CS2 catalog from steamwebapi.com...');
   const url = `https://www.steamwebapi.com/steam/api/items?key=${SWAPI_KEY}&game=cs2&production=1`;
@@ -42,15 +36,12 @@ async function fetchAllItems() {
   console.log(`[API] Received ${data.length} items`);
   return data;
 }
-
 async function main() {
   console.log('[KASTLR] Full market pull starting at', new Date().toISOString());
-
   // FX rate
   const zarRate = await getFXRate();
   console.log('[FX] USD/ZAR:', zarRate);
   await supabase.from('fx_rates').insert({ rate: zarRate, timestamp: new Date() });
-
   // Fetch previous prices for change calculation
   // Paginate prev prices — Supabase caps at 1000 per call
 let prevData = [];
@@ -74,10 +65,8 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
     };
   });
   console.log(`[Prev] Loaded ${Object.keys(prevMap).length} previous prices`);
-
   // Fetch all items
   const items = await fetchAllItems();
-
   // Build upsert rows
   const rows = [];
   for (const item of items) {
@@ -85,14 +74,12 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
     const priceSteam   = item.pricelatest   || item.pricemedian || null;
     const priceReal    = item.pricereal     || null;
     const priceMix     = item.pricemix      || priceReal || priceSteam || null;
-
     const changeSteam  = prev.steam && priceSteam
       ? ((priceSteam - prev.steam) / prev.steam) * 100
       : 0;
     const changeReal   = prev.real && priceReal
       ? ((priceReal - prev.real) / prev.real) * 100
       : 0;
-
     rows.push({
       market_hash_name:  item.markethashname,
       normalized_name:   item.normalizedname,
@@ -130,7 +117,6 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
 	  tracker_url:       pricempireUrl(item.markethashname),
     });
   }
-
   // Upsert in batches of 500
   const BATCH = 500;
   let upserted = 0;
@@ -144,7 +130,6 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
     console.log(`[Upsert] ${upserted}/${rows.length}`);
   }
   console.log(`[Prices] Done — ${upserted} items stored`);
-
 // Daily price history snapshot
   const today = new Date().toISOString().split('T')[0];
   const historyRows = rows
@@ -167,12 +152,11 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
     else historyInserted += batch.length;
   }
   console.log(`[History] ${historyInserted} rows snapshotted for ${today}`);
-	
+
   // Social post — top movers
   const WEAPON_GROUPS = ['rifle','sniper rifle','pistol','smg','shotgun','machinegun','knife','gloves'];
-
 const movers = rows
-  .filter(r => 
+  .filter(r =>
     r.price_real &&
     r.zar_real >= 50 &&
     r.sold_7d >= 10 &&
@@ -183,7 +167,6 @@ const movers = rows
   )
   .sort((a,b) => Math.abs(b.change_pct_real) - Math.abs(a.change_pct_real))
   .slice(0, 1);
-
   if (movers.length) {
     const top   = movers[0];
     const sign  = top.change_pct_real > 0 ? '↑' : '↓';
@@ -194,12 +177,11 @@ const movers = rows
     const text = `${emoji} CS2 ZA — ${shortName}\n${sign} ${Math.abs(top.change_pct_real).toFixed(1)}% · R${top.zar_real?.toLocaleString('en-ZA')} (was R${Math.round((top.prev_real||0) * zarRate).toLocaleString('en-ZA')})\n\nkastlr.com/prices`;
     await supabase.from('social_posts').insert({ post_text: text, status: 'queued', trigger: 'cron' });
     console.log('[Social] Post queued:', text.length, 'chars');
-
 	// Market digest post
   const digestText = `📊 CS2 ZA Market Digest updated\n\nTop movers, buy low watch & category breakdown — all in ZAR\n\nkastlr.com/market\n@kastlrcsgo`;
   await supabase.from('social_posts').insert({ post_text: digestText, status: 'queued', trigger: 'cron' });
   console.log('[Social] Market digest post queued');
-	  
+
     // Discord webhook
     try {
       await fetch('https://discord.com/api/webhooks/1514811034496405525/7EINubJikI0wPPcA5Xd0-QqSZU-VT93NyWGKNycq88tD-aK5-I55Kjrhz407HCIgWhGo', {
@@ -213,7 +195,6 @@ const movers = rows
       console.log('[Discord] Post sent');
     } catch(e) { console.error('[Discord] Failed:', e.message); }
   }
-
   // Refresh materialized view
   try {
     await supabase.rpc('refresh_materialized_view');
@@ -221,9 +202,8 @@ const movers = rows
     console.log('[Cron] Materialized view refreshed');
   } catch(e) { console.error('[Cron] View refresh failed:', e.message); }
 
-// Market Pro — total index, Buff163 movers, Sheets + email delivery
-  const { index, movers } = await runMarketProSnapshot(supabase, rows, zarRate);
-
+  // Market Pro — total index, Buff163 movers, Sheets + email delivery
+  const { index, movers: buffMovers } = await runMarketProSnapshot(supabase, rows, zarRate);
   const { data: prevIndexRow } = await supabase
     .from('market_index_history')
     .select('total_turnover_usd')
@@ -231,7 +211,6 @@ const movers = rows
     .order('snapshot_date', { ascending: false })
     .limit(1)
     .single();
-
   const budget = 1000;
   const { count: budgetCandidateCount } = await supabase
     .from('cs2_prices')
@@ -239,10 +218,9 @@ const movers = rows
     .lte('price_real', budget)
     .gt('price_real', 0)
     .gt('sold_7d', 0);
-
-  await appendDailySnapshotToSheets({ today, index, movers, budgetCandidateCount });
+  await appendDailySnapshotToSheets({ today, index, movers: buffMovers, budgetCandidateCount });
   await sendDailyMarketProEmail({
-    today, index, movers, budgetCandidateCount, budget,
+    today, index, movers: buffMovers, budgetCandidateCount, budget,
     prevTurnoverUsd: prevIndexRow?.total_turnover_usd,
   });
 
@@ -254,7 +232,6 @@ const movers = rows
 
   console.log('[KASTLR] Full market pull complete at', new Date().toISOString());
 }
-
 async function checkAndSendAlerts(zarRate) {
   if (!RESEND_KEY) return;
   const { data: alerts } = await supabase.from('watchlist').select('*').eq('alert_sent', false).eq('confirmed', true);
@@ -285,7 +262,6 @@ async function checkAndSendAlerts(zarRate) {
     } catch(e) { console.error('[Alerts] Failed:', e.message); }
   }
 }
-
 async function fetchLeaderboard() {
   try {
     const res = await fetch('https://explodingcamera.github.io/cs2leaderboard/data/latest/africa.json');
@@ -304,7 +280,6 @@ async function fetchLeaderboard() {
     console.log(`[Leaderboard] ${inserts.length} players stored`);
   } catch(e) { console.error('[Leaderboard] Failed:', e.message); }
 }
-
 main().catch(e => {
   console.error('[FATAL]', e);
   process.exit(0);
