@@ -114,7 +114,7 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
       steam_url:         item.steamurl,
 	  variants:          item.variants || null,
 	  updated_at:        new Date(),
-	  tracker_url:       pricempireUrl(item.markethashname),
+	  tracker_url: pricempireUrl(item.markethashname, item.itemgroup),
     });
   }
   // Upsert in batches of 500
