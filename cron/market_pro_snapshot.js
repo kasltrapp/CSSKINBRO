@@ -52,7 +52,7 @@ const WEAR_SLUG = {
   'Battle-Scarred': 'battle-scarred',
 };
 
-export function pricempireUrl(marketHashName) {
+export function pricempireUrl(marketHashName, itemGroup) {
   let name = marketHashName || '';
   if (!name) return null;
   let stattrak = false, souvenir = false;
@@ -86,7 +86,11 @@ export function pricempireUrl(marketHashName) {
   else if (souvenir && wearSlug) variant = 'souvenir-' + wearSlug;
   else if (wearSlug) variant = wearSlug;
 
-  return `https://pricempire.com/cs2-items/skin/${slug}${variant ? '/' + variant : ''}`;
+  // Pricempire uses a different category segment for gloves than for
+  // everything else (skins, knives, agents, etc. all use "skin").
+  const category = itemGroup === 'gloves' ? 'glove' : 'skin';
+
+  return `https://pricempire.com/cs2-items/${category}/${slug}${variant ? '/' + variant : ''}`;
 }
 
 export function pricempireFallbackUrl(marketHashName) {
@@ -301,7 +305,7 @@ export async function computeBuffTopMovers(supabase, catalogueRows, today) {
     buff_listing_count: c.qty_today,
     entry_risk: entryRiskLabel(c.pct_change_7d, true),
     exit_confidence: exitConfidenceLabel(catalogueMap[c.market_hash_name]?.sold_7d, c._catAvgSold7d),
-    tracker_url: pricempireUrl(c.market_hash_name),
+    tracker_url: pricempireUrl(c.market_hash_name, c.item_group),
   }));
 }
 
