@@ -6,6 +6,9 @@
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
 import ws from 'ws';
+import { runMarketProSnapshot, pricempireUrl } from './market_pro_snapshot.js';
+import { appendDailySnapshotToSheets } from './market_pro_sheets.js';
+import { sendDailyMarketProEmail } from './market_pro_email.js';
 
 const SUPABASE_URL    = process.env.SUPABASE_URL;
 const SUPABASE_KEY    = process.env.SUPABASE_SERVICE_KEY;
@@ -124,6 +127,7 @@ console.log(`[Prev] Loaded ${prevData.length} previous prices`);
       steam_url:         item.steamurl,
 	  variants:          item.variants || null,
 	  updated_at:        new Date(),
+	  tracker_url:       pricempireUrl(item.markethashname),
     });
   }
 
@@ -218,6 +222,31 @@ const movers = rows
   } catch(e) { console.error('[Cron] View refresh failed:', e.message); }
 
 }
+
+// Market Pro — total index, Buff163 movers, Sheets + email delivery
+  const { index, movers } = await runMarketProSnapshot(supabase, rows, zarRate);
+
+  const { data: prevIndexRow } = await supabase
+    .from('market_index_history')
+    .select('total_turnover_usd')
+    .neq('snapshot_date', today)
+    .order('snapshot_date', { ascending: false })
+    .limit(1)
+    .single();
+
+  const budget = 1000;
+  const { count: budgetCandidateCount } = await supabase
+    .from('cs2_prices')
+    .select('market_hash_name', { count: 'exact', head: true })
+    .lte('price_real', budget)
+    .gt('price_real', 0)
+    .gt('sold_7d', 0);
+
+  await appendDailySnapshotToSheets({ today, index, movers, budgetCandidateCount });
+  await sendDailyMarketProEmail({
+    today, index, movers, budgetCandidateCount, budget,
+    prevTurnoverUsd: prevIndexRow?.total_turnover_usd,
+  });
 
   // Alerts
   await checkAndSendAlerts(zarRate);
