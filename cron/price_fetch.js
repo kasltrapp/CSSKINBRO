@@ -203,26 +203,32 @@ const movers = rows
   } catch(e) { console.error('[Cron] View refresh failed:', e.message); }
 
   // Market Pro — total index, Buff163 movers, Sheets + email delivery
-  const { index, movers: buffMovers } = await runMarketProSnapshot(supabase, rows, zarRate);
-  const { data: prevIndexRow } = await supabase
-    .from('market_index_history')
-    .select('total_turnover_usd')
-    .neq('snapshot_date', today)
-    .order('snapshot_date', { ascending: false })
-    .limit(1)
-    .single();
-  const budget = 1000;
-  const { count: budgetCandidateCount } = await supabase
-    .from('cs2_prices')
-    .select('market_hash_name', { count: 'exact', head: true })
-    .lte('price_real', budget)
-    .gt('price_real', 0)
-    .gt('sold_7d', 0);
-  await appendDailySnapshotToSheets({ today, index, movers: buffMovers, budgetCandidateCount });
-  await sendDailyMarketProEmail({
-    today, index, movers: buffMovers, budgetCandidateCount, budget,
-    prevTurnoverUsd: prevIndexRow?.total_turnover_usd,
-  });
+  // Wrapped so that a failure here (e.g. Sheets auth) can never block the
+  // alerts/leaderboard steps below, which worked fine before this feature existed.
+  try {
+    const { index, movers: buffMovers } = await runMarketProSnapshot(supabase, rows, zarRate);
+    const { data: prevIndexRow } = await supabase
+      .from('market_index_history')
+      .select('total_turnover_usd')
+      .neq('snapshot_date', today)
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .single();
+    const budget = 1000;
+    const { count: budgetCandidateCount } = await supabase
+      .from('cs2_prices')
+      .select('market_hash_name', { count: 'exact', head: true })
+      .lte('price_real', budget)
+      .gt('price_real', 0)
+      .gt('sold_7d', 0);
+    await appendDailySnapshotToSheets({ today, index, movers: buffMovers, budgetCandidateCount });
+    await sendDailyMarketProEmail({
+      today, index, movers: buffMovers, budgetCandidateCount, budget,
+      prevTurnoverUsd: prevIndexRow?.total_turnover_usd,
+    });
+  } catch (e) {
+    console.error('[MarketPro] Sheets/email step failed, continuing with alerts + leaderboard:', e.message);
+  }
 
   // Alerts
   await checkAndSendAlerts(zarRate);
