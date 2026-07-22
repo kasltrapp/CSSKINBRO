@@ -286,7 +286,42 @@ async function fetchLeaderboard() {
     console.log(`[Leaderboard] ${inserts.length} players stored`);
   } catch(e) { console.error('[Leaderboard] Failed:', e.message); }
 }
+async function exportHistoryToR2(today) {
+  try {
+    let allRows = [], from = 0;
+    while (true) {
+      const { data } = await supabase
+        .from('cs2_price_history')
+        .select('market_hash_name,zar_real,zar_steam,sold_7d,change_pct_real,snapshot_date')
+        .eq('snapshot_date', today)
+        .range(from, from + 999);
+      if (!data?.length) break;
+      allRows.push(...data);
+      if (data.length < 1000) break;
+      from += 1000;
+    }
+    if (!allRows.length) return;
+    const res = await fetch('https://fancy-night-01e8.kastlrapp.workers.dev/history/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Key': process.env.INVENTORY_SECRET,
+        'X-File-Key': `price-history/${today}.json`,
+      },
+      body: JSON.stringify(allRows),
+    });
+    const result = await res.json();
+    if (result.success) console.log(`[R2] Exported ${allRows.length} rows → price-history/${today}.json`);
+    else console.error('[R2] Export failed:', result.error);
+  } catch(e) { console.error('[R2] Export error:', e.message); }
+}
 main().catch(e => {
   console.error('[FATAL]', e);
   process.exit(0);
+	await exportHistoryToR2(today);
+
+// Trim to 90 days
+const cutoff = new Date(Date.now() - 90 * 86400000).toISOString().split('T')[0];
+await supabase.from('cs2_price_history').delete().lt('snapshot_date', cutoff);
+console.log('[Trim] History trimmed to 90 days');
 });
