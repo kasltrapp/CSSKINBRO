@@ -270,7 +270,7 @@ async function checkAndSendAlerts(zarRate) {
 }
 async function fetchLeaderboard() {
   try {
-    const res = await fetch('https://explodingcamera.github.io/cs2leaderboard/data/latest/africa.json');
+    const res = await fetch('https://leaderboar-rambler-f138.kastlrapp.workers.dev/');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data?.length) throw new Error('No data');
